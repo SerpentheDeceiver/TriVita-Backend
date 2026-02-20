@@ -25,3 +25,4 @@ Thumbs.db
 
 # Logs
 *.log
+firebase_service_account.json

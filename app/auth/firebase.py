@@ -1,7 +1,10 @@
 """
 Firebase Admin SDK initialisation and token verification dependency.
+Production-safe: validates credential file exists before initialising,
+initialises only once via lru_cache, raises clear errors if config is missing.
 """
 import os
+import sys
 from functools import lru_cache
 
 import firebase_admin
@@ -11,15 +14,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_CRED_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase_service_account.json")
-
 
 @lru_cache(maxsize=1)
 def _init_firebase() -> None:
-    """Initialise Firebase Admin SDK exactly once."""
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(_CRED_PATH)
-        firebase_admin.initialize_app(cred)
+    """
+    Initialise Firebase Admin SDK exactly once.
+    Reads the credentials path from FIREBASE_CREDENTIALS_PATH env var.
+    Raises RuntimeError with a clear message if the file is missing.
+    """
+    if firebase_admin._apps:
+        return  # Already initialised — nothing to do
+
+    cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "").strip()
+    if not cred_path:
+        raise RuntimeError(
+            "FIREBASE_CREDENTIALS_PATH environment variable is not set. "
+            "On Render, upload firebase_service_account.json as a Secret File "
+            "at /etc/secrets/firebase_service_account.json and set "
+            "FIREBASE_CREDENTIALS_PATH=/etc/secrets/firebase_service_account.json"
+        )
+
+    if not os.path.isfile(cred_path):
+        raise RuntimeError(
+            f"Firebase credentials file not found at '{cred_path}'. "
+            "Check that the Secret File is correctly uploaded and the path in "
+            "FIREBASE_CREDENTIALS_PATH matches exactly."
+        )
+
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
 
 
 async def verify_firebase_token(
@@ -30,7 +53,13 @@ async def verify_firebase_token(
     Extracts and verifies the Firebase ID token from the Authorization header.
     Returns the decoded token payload (contains 'uid', 'email', etc.).
     """
-    _init_firebase()
+    try:
+        _init_firebase()
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
     if not authorization.startswith("Bearer "):
         raise HTTPException(

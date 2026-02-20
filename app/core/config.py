@@ -1,25 +1,38 @@
 """
 Centralised application settings loaded from environment variables / .env file.
+All settings are required in production — missing values will raise at startup.
 """
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
+def _require(key: str) -> str:
+    """Read env var or abort with a clear error message."""
+    value = os.getenv(key, "").strip()
+    if not value:
+        print(
+            f"\n❌  MISSING REQUIRED ENV VAR: '{key}'\n"
+            f"    Set this in your Render environment variables or .env file.\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return value
+
+
 class _Settings:
-    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017/health_ai")
-    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "health_ai")
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    # ── Required in production ────────────────────────────────────────────────
+    MONGO_URI: str      = _require("MONGO_URI")
+    MONGO_DB_NAME: str  = os.getenv("MONGO_DB_NAME", "health_ai")
+    GROQ_API_KEY: str   = _require("GROQ_API_KEY")
 
-    # Path to the Firebase service-account JSON file (downloaded from Firebase Console)
-    # Matches the .env key: FIREBASE_CREDENTIALS_PATH
-    FIREBASE_SERVICE_ACCOUNT_PATH: str = os.getenv(
-        "FIREBASE_CREDENTIALS_PATH",
-        os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "./firebase_service_account.json"),
-    )
+    # Path to Firebase service-account JSON
+    # On Render: upload as a Secret File at /etc/secrets/firebase_service_account.json
+    FIREBASE_SERVICE_ACCOUNT_PATH: str = _require("FIREBASE_CREDENTIALS_PATH")
 
-    # Scheduler
+    # ── Scheduler ─────────────────────────────────────────────────────────────
     SCHEDULER_INTERVAL_MINUTES: int = int(
         os.getenv("SCHEDULER_INTERVAL_MINUTES", "5")
     )
@@ -27,7 +40,7 @@ class _Settings:
     # Reminder windows (minutes after initial send)
     REMINDER_15_MINUTES: int = 15
     REMINDER_30_MINUTES: int = 30
-    EXPIRY_MINUTES: int = 45   # after this no more reminders
+    EXPIRY_MINUTES: int      = 45   # after this, no more reminders
 
 
 settings = _Settings()

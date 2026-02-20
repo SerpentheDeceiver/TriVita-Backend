@@ -1,24 +1,20 @@
 """
 MongoDB async connection using Motor driver.
 Single client instance for connection pooling.
+URI is always taken from the MONGO_URI environment variable — no localhost fallback.
 """
-import os
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.core.config import settings
 
-MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017/health_ai")
-DB_NAME: str = os.getenv("MONGO_DB_NAME", "health_ai")
-
-# Module-level singleton client (created once, reused across requests)
+# Module-level singleton client (created once, reused across all requests)
 _client: AsyncIOMotorClient | None = None
 
 
 def get_client() -> AsyncIOMotorClient:
     global _client
     if _client is None:
-        _client = AsyncIOMotorClient(MONGO_URI)
+        _client = AsyncIOMotorClient(settings.MONGO_URI)
     return _client
 
 
@@ -28,7 +24,7 @@ async def get_users_collection() -> AsyncIOMotorCollection:
     ensures a unique index on firebase_uid exists.
     """
     client = get_client()
-    db = client[DB_NAME]
+    db = client[settings.MONGO_DB_NAME]
     collection = db["users"]
     # Idempotent: only creates the index if it doesn't exist
     await collection.create_index("firebase_uid", unique=True)
@@ -41,7 +37,7 @@ async def get_daily_logs_collection() -> AsyncIOMotorCollection:
     ensures a unique compound index on (firebase_uid, date).
     """
     client = get_client()
-    db = client[DB_NAME]
+    db = client[settings.MONGO_DB_NAME]
     collection = db["daily_logs"]
     # Compound unique index: one document per user per day
     await collection.create_index(
@@ -56,7 +52,7 @@ async def get_meal_plans_collection() -> AsyncIOMotorCollection:
     ensures a unique compound index on (firebase_uid, date).
     """
     client = get_client()
-    db = client[DB_NAME]
+    db = client[settings.MONGO_DB_NAME]
     collection = db["meal_plans"]
     # Compound unique index: one saved plan per user per day
     await collection.create_index(

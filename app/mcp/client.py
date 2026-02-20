@@ -25,12 +25,11 @@ class MCPHealthClient:
     # ──────────────────────────────────────────────────────────────────────
 
     async def connect(self):
-        """Initialize MongoDB connection."""
+        """Initialize MongoDB connection using validated settings (no localhost fallback)."""
         if self._db_client is None:
-            mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/health_ai")
-            db_name   = os.getenv("MONGO_DB_NAME", "health_ai")
-            self._db_client = AsyncIOMotorClient(mongo_uri)
-            self._db = self._db_client[db_name]
+            from app.core.config import settings
+            self._db_client = AsyncIOMotorClient(settings.MONGO_URI)
+            self._db = self._db_client[settings.MONGO_DB_NAME]
 
     async def ensure_connected(self):
         if self._db_client is None:

@@ -1,0 +1,48 @@
+{
+  "date": "2026-02-22",
+  "day_of_week": "Saturday",
+  "meals": [
+    {
+      "time": "09:00",
+      "type": "breakfast",
+      "items": ["Egg white omelet", "Spinach", "Whole wheat toast", "Avocado"],
+      "calories": 420,
+      "protein_g": 28,
+      "carbs_g": 48,
+      "fat_g": 14
+    },
+    {
+      "time": "12:00",
+      "type": "lunch",
+      "items": ["Chicken breast", "Quinoa", "Steamed broccoli"],
+      "calories": 580,
+      "protein_g": 48,
+      "carbs_g": 52,
+      "fat_g": 16
+    },
+    {
+      "time": "15:00",
+      "type": "snack",
+      "items": ["Protein shake", "Banana", "Peanut butter"],
+      "calories": 320,
+      "protein_g": 26,
+      "carbs_g": 38,
+      "fat_g": 10
+    },
+    {
+      "time": "19:00",
+      "type": "dinner",
+      "items": ["Grilled steak", "Sweet potato", "Asparagus"],
+      "calories": 720,
+      "protein_g": 54,
+      "carbs_g": 58,
+      "fat_g": 24
+    }
+  ],
+  "total_calories": 2040,
+  "total_protein_g": 156,
+  "total_carbs_g": 196,
+  "total_fat_g": 64,
+  "meal_count": 4,
+  "budget_per_meal": 14
+}

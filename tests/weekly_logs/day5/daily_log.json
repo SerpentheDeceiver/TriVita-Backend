@@ -1,0 +1,87 @@
+{
+  "firebase_uid": "K9Nekn5YPkX40YKv3RFt8rrHv6t1",
+  "health_date": "2026-02-17",
+  "sleep": {
+    "entry_mode": "time",
+    "source": "manual",
+    "bed_time": "2026-02-16T23:00:00+00:00",
+    "wake_time": "2026-02-17T06:30:00+00:00",
+    "hours": 7.5,
+    "quality_score": 3,
+    "logged_at": "2026-02-17T07:00:00+00:00"
+  },
+  "hydration": {
+    "total_ml": 2600,
+    "entries": [
+      {"amount_ml": 250, "timestamp": "2026-02-17T06:30:00+00:00"},
+      {"amount_ml": 300, "timestamp": "2026-02-17T08:30:00+00:00"},
+      {"amount_ml": 350, "timestamp": "2026-02-17T11:00:00+00:00"},
+      {"amount_ml": 400, "timestamp": "2026-02-17T13:00:00+00:00"},
+      {"amount_ml": 400, "timestamp": "2026-02-17T16:00:00+00:00"},
+      {"amount_ml": 500, "timestamp": "2026-02-17T19:00:00+00:00"},
+      {"amount_ml": 400, "timestamp": "2026-02-17T21:00:00+00:00"}
+    ]
+  },
+  "nutrition": {
+    "entries": [
+      {
+        "meal_type": "breakfast",
+        "timestamp": "2026-02-17T07:30:00+00:00",
+        "items": [
+          {"name": "Overnight oats", "calories": 300, "protein": 12, "carbs": 50, "fat": 7},
+          {"name": "Mixed berries", "calories": 80, "protein": 1, "carbs": 18, "fat": 0},
+          {"name": "Almond milk latte", "calories": 90, "protein": 3, "carbs": 10, "fat": 4}
+        ],
+        "meal_calories": 470
+      },
+      {
+        "meal_type": "lunch",
+        "timestamp": "2026-02-17T13:00:00+00:00",
+        "items": [
+          {"name": "Grilled chicken breast", "calories": 230, "protein": 40, "carbs": 0, "fat": 6},
+          {"name": "Brown rice (1 cup)", "calories": 200, "protein": 4, "carbs": 42, "fat": 2},
+          {"name": "Stir-fried vegetables", "calories": 120, "protein": 4, "carbs": 18, "fat": 4}
+        ],
+        "meal_calories": 550
+      },
+      {
+        "meal_type": "snack",
+        "timestamp": "2026-02-17T16:00:00+00:00",
+        "items": [
+          {"name": "Protein shake", "calories": 160, "protein": 25, "carbs": 8, "fat": 3},
+          {"name": "Rice cakes (2)", "calories": 70, "protein": 1, "carbs": 14, "fat": 0}
+        ],
+        "meal_calories": 230
+      },
+      {
+        "meal_type": "dinner",
+        "timestamp": "2026-02-17T19:30:00+00:00",
+        "items": [
+          {"name": "Lean beef mince (150g)", "calories": 250, "protein": 30, "carbs": 0, "fat": 15},
+          {"name": "Zucchini noodles", "calories": 60, "protein": 3, "carbs": 10, "fat": 0},
+          {"name": "Tomato sauce", "calories": 80, "protein": 4, "carbs": 14, "fat": 2},
+          {"name": "Parmesan (20g)", "calories": 90, "protein": 8, "carbs": 0, "fat": 6}
+        ],
+        "meal_calories": 480
+      }
+    ],
+    "totals": {
+      "calories": 1730,
+      "protein": 135,
+      "carbs": 184,
+      "fat": 49
+    }
+  },
+  "scores": {
+    "sleep": 78,
+    "hydration": 95,
+    "nutrition": 86,
+    "wellness": 86
+  },
+  "deficit": {
+    "sleep_deficit_hours": -0.5,
+    "hydration_gap_ml": 100,
+    "calorie_gap": -270
+  },
+  "updated_at": "2026-02-17T22:00:00+00:00"
+}

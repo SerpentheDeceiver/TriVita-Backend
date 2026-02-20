@@ -1,0 +1,48 @@
+{
+  "date": "2026-02-17",
+  "day_of_week": "Monday",
+  "meals": [
+    {
+      "time": "07:30",
+      "type": "breakfast",
+      "items": ["Oatmeal with berries", "Greek yogurt", "Banana"],
+      "calories": 450,
+      "protein_g": 25,
+      "carbs_g": 65,
+      "fat_g": 10
+    },
+    {
+      "time": "13:00",
+      "type": "lunch",
+      "items": ["Grilled chicken breast", "Brown rice", "Mixed vegetables", "Olive oil"],
+      "calories": 650,
+      "protein_g": 45,
+      "carbs_g": 60,
+      "fat_g": 20
+    },
+    {
+      "time": "16:00",
+      "type": "snack",
+      "items": ["Protein shake", "Apple"],
+      "calories": 250,
+      "protein_g": 20,
+      "carbs_g": 30,
+      "fat_g": 5
+    },
+    {
+      "time": "19:30",
+      "type": "dinner",
+      "items": ["Salmon fillet", "Quinoa", "Broccoli", "Avocado"],
+      "calories": 700,
+      "protein_g": 50,
+      "carbs_g": 55,
+      "fat_g": 30
+    }
+  ],
+  "total_calories": 2050,
+  "total_protein_g": 140,
+  "total_carbs_g": 210,
+  "total_fat_g": 65,
+  "meal_count": 4,
+  "budget_per_meal": 12
+}

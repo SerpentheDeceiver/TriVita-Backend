@@ -1,0 +1,15 @@
+{
+  "date": "2026-02-20",
+  "day_of_week": "Thursday",
+  "water_intake_ml": 2100,
+  "water_logs": [
+    {"time": "07:15", "amount_ml": 250, "type": "water"},
+    {"time": "10:00", "amount_ml": 300, "type": "water"},
+    {"time": "13:00", "amount_ml": 400, "type": "water"},
+    {"time": "16:00", "amount_ml": 350, "type": "water"},
+    {"time": "19:00", "amount_ml": 450, "type": "water"},
+    {"time": "21:30", "amount_ml": 350, "type": "water"}
+  ],
+  "caffeine_intake_mg": 180,
+  "urine_color": "light_yellow"
+}

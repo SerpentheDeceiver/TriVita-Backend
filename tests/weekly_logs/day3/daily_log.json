@@ -1,0 +1,87 @@
+{
+  "firebase_uid": "K9Nekn5YPkX40YKv3RFt8rrHv6t1",
+  "health_date": "2026-02-15",
+  "sleep": {
+    "entry_mode": "time",
+    "source": "manual",
+    "bed_time": "2026-02-14T22:00:00+00:00",
+    "wake_time": "2026-02-15T06:30:00+00:00",
+    "hours": 8.5,
+    "quality_score": 4,
+    "logged_at": "2026-02-15T07:00:00+00:00"
+  },
+  "hydration": {
+    "total_ml": 2100,
+    "entries": [
+      {"amount_ml": 300, "timestamp": "2026-02-15T07:00:00+00:00"},
+      {"amount_ml": 250, "timestamp": "2026-02-15T09:00:00+00:00"},
+      {"amount_ml": 350, "timestamp": "2026-02-15T12:00:00+00:00"},
+      {"amount_ml": 300, "timestamp": "2026-02-15T15:00:00+00:00"},
+      {"amount_ml": 400, "timestamp": "2026-02-15T17:00:00+00:00"},
+      {"amount_ml": 500, "timestamp": "2026-02-15T20:00:00+00:00"}
+    ]
+  },
+  "nutrition": {
+    "entries": [
+      {
+        "meal_type": "breakfast",
+        "timestamp": "2026-02-15T08:00:00+00:00",
+        "items": [
+          {"name": "Eggs (2 scrambled)", "calories": 200, "protein": 14, "carbs": 2, "fat": 14},
+          {"name": "Whole wheat toast", "calories": 160, "protein": 6, "carbs": 30, "fat": 2},
+          {"name": "Avocado (1/4)", "calories": 80, "protein": 1, "carbs": 4, "fat": 7},
+          {"name": "Coffee with milk", "calories": 60, "protein": 3, "carbs": 5, "fat": 3}
+        ],
+        "meal_calories": 500
+      },
+      {
+        "meal_type": "lunch",
+        "timestamp": "2026-02-15T13:00:00+00:00",
+        "items": [
+          {"name": "Grilled tuna steak", "calories": 200, "protein": 35, "carbs": 0, "fat": 6},
+          {"name": "Roasted sweet potato", "calories": 160, "protein": 3, "carbs": 37, "fat": 0},
+          {"name": "Mixed green salad", "calories": 80, "protein": 3, "carbs": 10, "fat": 4},
+          {"name": "Olive oil dressing", "calories": 100, "protein": 0, "carbs": 0, "fat": 11}
+        ],
+        "meal_calories": 540
+      },
+      {
+        "meal_type": "snack",
+        "timestamp": "2026-02-15T16:00:00+00:00",
+        "items": [
+          {"name": "Protein shake", "calories": 180, "protein": 25, "carbs": 10, "fat": 4},
+          {"name": "Mixed nuts (30g)", "calories": 180, "protein": 5, "carbs": 6, "fat": 15}
+        ],
+        "meal_calories": 360
+      },
+      {
+        "meal_type": "dinner",
+        "timestamp": "2026-02-15T19:30:00+00:00",
+        "items": [
+          {"name": "Chicken stir fry", "calories": 300, "protein": 35, "carbs": 20, "fat": 10},
+          {"name": "Brown rice", "calories": 200, "protein": 4, "carbs": 42, "fat": 2},
+          {"name": "Bok choy", "calories": 60, "protein": 3, "carbs": 8, "fat": 1}
+        ],
+        "meal_calories": 560
+      }
+    ],
+    "totals": {
+      "calories": 1960,
+      "protein": 137,
+      "carbs": 174,
+      "fat": 79
+    }
+  },
+  "scores": {
+    "sleep": 90,
+    "hydration": 76,
+    "nutrition": 82,
+    "wellness": 83
+  },
+  "deficit": {
+    "sleep_deficit_hours": 0.5,
+    "hydration_gap_ml": -400,
+    "calorie_gap": -40
+  },
+  "updated_at": "2026-02-15T22:00:00+00:00"
+}

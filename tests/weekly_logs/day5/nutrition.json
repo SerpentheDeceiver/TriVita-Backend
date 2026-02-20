@@ -1,0 +1,48 @@
+{
+  "date": "2026-02-21",
+  "day_of_week": "Friday",
+  "meals": [
+    {
+      "time": "08:30",
+      "type": "breakfast",
+      "items": ["Bagel", "Cream cheese", "Coffee"],
+      "calories": 380,
+      "protein_g": 15,
+      "carbs_g": 58,
+      "fat_g": 14
+    },
+    {
+      "time": "13:30",
+      "type": "lunch",
+      "items": ["Pizza slice", "Caesar salad"],
+      "calories": 720,
+      "protein_g": 32,
+      "carbs_g": 75,
+      "fat_g": 32
+    },
+    {
+      "time": "16:30",
+      "type": "snack",
+      "items": ["Protein bar"],
+      "calories": 220,
+      "protein_g": 20,
+      "carbs_g": 24,
+      "fat_g": 8
+    },
+    {
+      "time": "20:30",
+      "type": "dinner",
+      "items": ["Burger", "Fries", "Coleslaw"],
+      "calories": 880,
+      "protein_g": 38,
+      "carbs_g": 85,
+      "fat_g": 42
+    }
+  ],
+  "total_calories": 2200,
+  "total_protein_g": 105,
+  "total_carbs_g": 242,
+  "total_fat_g": 96,
+  "meal_count": 4,
+  "budget_per_meal": 15
+}

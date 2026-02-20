@@ -1,0 +1,12 @@
+{
+  "user_id": "user_001",
+  "name": "John Smith",
+  "age": 28,
+  "weight": 72,
+  "height": 175,
+  "gender": "male",
+  "weight_goal": "reduce",
+  "target_weight_change_kg": 5,
+  "target_timeline_weeks": 12,
+  "activity_level": "moderate"
+}

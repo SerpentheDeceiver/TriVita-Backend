@@ -1,0 +1,48 @@
+{
+  "date": "2026-02-18",
+  "day_of_week": "Tuesday",
+  "meals": [
+    {
+      "time": "08:00",
+      "type": "breakfast",
+      "items": ["Scrambled eggs", "Whole wheat toast", "Orange juice"],
+      "calories": 400,
+      "protein_g": 22,
+      "carbs_g": 50,
+      "fat_g": 12
+    },
+    {
+      "time": "13:30",
+      "type": "lunch",
+      "items": ["Turkey sandwich", "Sweet potato", "Salad"],
+      "calories": 600,
+      "protein_g": 40,
+      "carbs_g": 65,
+      "fat_g": 18
+    },
+    {
+      "time": "16:30",
+      "type": "snack",
+      "items": ["Almonds", "Banana"],
+      "calories": 280,
+      "protein_g": 12,
+      "carbs_g": 35,
+      "fat_g": 14
+    },
+    {
+      "time": "20:00",
+      "type": "dinner",
+      "items": ["Lean beef", "Pasta", "Green beans"],
+      "calories": 750,
+      "protein_g": 48,
+      "carbs_g": 70,
+      "fat_g": 28
+    }
+  ],
+  "total_calories": 2030,
+  "total_protein_g": 122,
+  "total_carbs_g": 220,
+  "total_fat_g": 72,
+  "meal_count": 4,
+  "budget_per_meal": 10
+}

@@ -1,0 +1,11 @@
+{
+  "date": "2026-02-23",
+  "day_of_week": "Sunday",
+  "sleep_hours": 8.5,
+  "sleep_quality": "good",
+  "bed_time": "22:00",
+  "wake_time": "06:30",
+  "interruptions": 1,
+  "dream_recall": true,
+  "feeling_on_wake": "refreshed"
+}

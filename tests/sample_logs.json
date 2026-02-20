@@ -1,0 +1,101 @@
+[
+{
+  "_id": { "$oid": "6995d232fcdf6848a2ba4069" },
+  "date": "2026-02-19",
+  "firebase_uid": "K9Nekn5YPkX40YKv3RFt8rrHv6t1",
+  "hydration": {
+    "entries": [
+      { "amount_ml": 280, "time": "8:00 AM" },
+      { "amount_ml": 300, "time": "10:00 AM" },
+      { "amount_ml": 300, "time": "12:00 PM" },
+      { "amount_ml": 300, "time": "2:00 PM" },
+      { "amount_ml": 300, "time": "4:00 PM" },
+      { "amount_ml": 300, "time": "6:00 PM" },
+      { "amount_ml": 300, "time": "8:00 PM" }
+    ],
+    "total_ml": 2080
+  },
+  "updated_at": { "$date": "2026-02-19T14:53:40.600Z" },
+  "scores": { "sleep": 80, "hydration": 85, "nutrition": 75, "wellness": 80 },
+  "sleep": {
+    "entry_mode": "notification",
+    "source": "notification",
+    "logged_at": "2026-02-19T14:53:21.071401+00:00",
+    "hours": 6
+  },
+  "nutrition": {
+    "entries": [
+      { "meal_type": "breakfast", "time": "8:00 AM", "items": [ { "name": "Breakfast", "cal": 350, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 350 },
+      { "meal_type": "lunch", "time": "1:00 PM", "items": [ { "name": "Lunch", "cal": 500, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 500 },
+      { "meal_type": "dinner", "time": "7:30 PM", "items": [ { "name": "Dinner", "cal": 450, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 450 }
+    ],
+    "totals": { "calories": 1300, "carbs": 0, "fat": 0, "protein": 0 }
+  }
+},
+{
+  "_id": { "$oid": "6995d232fcdf6848a2ba4070" },
+  "date": "2026-02-20",
+  "firebase_uid": "K9Nekn5YPkX40YKv3RFt8rrHv6t1",
+  "hydration": {
+    "entries": [
+      { "amount_ml": 300, "time": "8:00 AM" },
+      { "amount_ml": 320, "time": "10:00 AM" },
+      { "amount_ml": 320, "time": "12:00 PM" },
+      { "amount_ml": 320, "time": "2:00 PM" },
+      { "amount_ml": 320, "time": "4:00 PM" },
+      { "amount_ml": 320, "time": "6:00 PM" },
+      { "amount_ml": 320, "time": "8:00 PM" }
+    ],
+    "total_ml": 2220
+  },
+  "updated_at": { "$date": "2026-02-20T14:53:40.600Z" },
+  "scores": { "sleep": 90, "hydration": 95, "nutrition": 85, "wellness": 90 },
+  "sleep": {
+    "entry_mode": "notification",
+    "source": "notification",
+    "logged_at": "2026-02-20T14:53:21.071401+00:00",
+    "hours": 7
+  },
+  "nutrition": {
+    "entries": [
+      { "meal_type": "breakfast", "time": "8:00 AM", "items": [ { "name": "Breakfast", "cal": 400, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 400 },
+      { "meal_type": "lunch", "time": "1:00 PM", "items": [ { "name": "Lunch", "cal": 600, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 600 },
+      { "meal_type": "dinner", "time": "7:30 PM", "items": [ { "name": "Dinner", "cal": 500, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 500 }
+    ],
+    "totals": { "calories": 1500, "carbs": 0, "fat": 0, "protein": 0 }
+  }
+},
+{
+  "_id": { "$oid": "6995d232fcdf6848a2ba4071" },
+  "date": "2026-02-21",
+  "firebase_uid": "K9Nekn5YPkX40YKv3RFt8rrHv6t1",
+  "hydration": {
+    "entries": [
+      { "amount_ml": 320, "time": "8:00 AM" },
+      { "amount_ml": 320, "time": "10:00 AM" },
+      { "amount_ml": 320, "time": "12:00 PM" },
+      { "amount_ml": 320, "time": "2:00 PM" },
+      { "amount_ml": 320, "time": "4:00 PM" },
+      { "amount_ml": 320, "time": "6:00 PM" },
+      { "amount_ml": 320, "time": "8:00 PM" }
+    ],
+    "total_ml": 2240
+  },
+  "updated_at": { "$date": "2026-02-21T14:53:40.600Z" },
+  "scores": { "sleep": 95, "hydration": 100, "nutrition": 88, "wellness": 94 },
+  "sleep": {
+    "entry_mode": "notification",
+    "source": "notification",
+    "logged_at": "2026-02-21T14:53:21.071401+00:00",
+    "hours": 8
+  },
+  "nutrition": {
+    "entries": [
+      { "meal_type": "breakfast", "time": "8:00 AM", "items": [ { "name": "Breakfast", "cal": 420, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 420 },
+      { "meal_type": "lunch", "time": "1:00 PM", "items": [ { "name": "Lunch", "cal": 650, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 650 },
+      { "meal_type": "dinner", "time": "7:30 PM", "items": [ { "name": "Dinner", "cal": 520, "protein": 0, "carbs": 0, "fat": 0 } ], "meal_calories": 520 }
+    ],
+    "totals": { "calories": 1590, "carbs": 0, "fat": 0, "protein": 0 }
+  }
+}
+]

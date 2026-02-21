@@ -14,6 +14,8 @@ Notification routes
 from __future__ import annotations
 
 import asyncio
+import logging
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -30,7 +32,8 @@ from app.db.notification_state import (
 from app.scheduler.notification_scheduler import run_notification_cycle, seed_daily_states
 from app.services.fcm_service import send_data_message
 from app.services.notification_templates import (
-    ML_ACTION_MAP,
+    HYDRATION_ML_PER_SLOT,
+    NUTRITION_MEAL_TYPES,
     SNOOZE_MINUTES,
     get_template,
 )
@@ -39,6 +42,8 @@ from app.core.config import settings
 router = APIRouter(tags=["Notifications"])
 
 DB_NAME = settings.MONGO_DB_NAME
+
+logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -52,15 +57,26 @@ class RegisterTokenRequest(BaseModel):
 
 class NotificationPrefsRequest(BaseModel):
     uid: str
-    enabled: bool = True
-    timezone: str = "UTC"
-    wake_time: str = "07:00"
-    breakfast_time: str = "08:00"
-    lunch_time: str = "13:00"
-    dinner_time: str = "19:30"
-    bedtime_time: str = "22:30"
-    hydration_interval_hours: float = 3.0
-    custom_slots: list[dict] = []
+    timezone: str = "Asia/Kolkata"
+    # Sleep (2)
+    wake_time:            str = "07:00"
+    bedtime_time:         str = "22:30"
+    # Nutrition (6)
+    breakfast_time:       str = "08:00"
+    mid_morning_time:     str = "10:30"
+    lunch_time:           str = "13:00"
+    afternoon_break_time: str = "16:00"
+    dinner_time:          str = "19:30"
+    post_dinner_time:     str = "21:00"
+    # Hydration (8) — 250 ml each, equally spread by default
+    hydration_1_time:     str = "08:45"
+    hydration_2_time:     str = "10:30"
+    hydration_3_time:     str = "12:15"
+    hydration_4_time:     str = "14:00"
+    hydration_5_time:     str = "15:45"
+    hydration_6_time:     str = "17:30"
+    hydration_7_time:     str = "19:15"
+    hydration_8_time:     str = "21:00"
 
 
 class AckRequest(BaseModel):
@@ -91,8 +107,11 @@ def _today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def _now_hhmm() -> str:
-    return datetime.now().strftime("%H:%M")
+def _now_hhmm(tz_name: str = "Asia/Kolkata") -> str:
+    """Return current time as HH:MM in the user's local timezone (default IST)."""
+    import pytz
+    tz = pytz.timezone(tz_name)
+    return datetime.now(tz).strftime("%H:%M")
 
 
 async def _get_user(uid: str) -> dict:
@@ -129,15 +148,23 @@ async def register_token(body: RegisterTokenRequest):
 async def get_preferences(uid: str = Query(...)):
     user = await _get_user(uid)
     default_prefs = {
-        "enabled": False,
-        "timezone": "Asia/Kolkata",
-        "wake_time": "07:00",
-        "breakfast_time": "08:00",
-        "lunch_time": "13:00",
-        "dinner_time": "19:30",
-        "bedtime_time": "22:30",
-        "hydration_interval_hours": 3,
-        "custom_slots": [],
+        "timezone":            "Asia/Kolkata",
+        "wake_time":            "07:00",
+        "bedtime_time":         "22:30",
+        "breakfast_time":       "08:00",
+        "mid_morning_time":     "10:30",
+        "lunch_time":           "13:00",
+        "afternoon_break_time": "16:00",
+        "dinner_time":          "19:30",
+        "post_dinner_time":     "21:00",
+        "hydration_1_time":     "08:45",
+        "hydration_2_time":     "10:30",
+        "hydration_3_time":     "12:15",
+        "hydration_4_time":     "14:00",
+        "hydration_5_time":     "15:45",
+        "hydration_6_time":     "17:30",
+        "hydration_7_time":     "19:15",
+        "hydration_8_time":     "21:00",
     }
     prefs = {**default_prefs, **(user.get("notification_prefs") or {})}
     return {"uid": uid, "preferences": prefs}
@@ -155,11 +182,14 @@ async def save_preferences(body: NotificationPrefsRequest):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    # Auto-seed today's states when preferences are saved
+    # Seed today's slots immediately when preferences are saved.
+    # _build_schedule skips any slot whose scheduled_utc is already past.
     today = _today()
-    user = await _get_user(body.uid)
+    user  = await _get_user(body.uid)
     from app.scheduler.notification_scheduler import _build_schedule
-    slots = _build_schedule(user, today)
+    # skip_past=False so user-edited times are always written to MongoDB,
+    # even if the slot time has already passed today.
+    slots = _build_schedule(user, today, skip_past=False)
     for slot in slots:
         await upsert_state(
             firebase_uid=body.uid,
@@ -171,8 +201,8 @@ async def save_preferences(body: NotificationPrefsRequest):
         )
 
     return {
-        "status": "ok",
-        "message": f"Preferences saved. {len(slots)} notification slots seeded for today.",
+        "status":       "ok",
+        "message":      f"Preferences saved. {len(slots)} upcoming slots seeded for today.",
         "slots_seeded": len(slots),
     }
 
@@ -196,118 +226,191 @@ async def acknowledge(body: AckRequest):
 @router.post("/quick-log", summary="Log health data directly from a notification action")
 async def quick_log(body: QuickLogRequest):
     """
-    The core quick-log endpoint.
+    Unified 3-action quick-log endpoint.
 
-    Called by the Flutter background isolate when the user taps
-    a notification action button (no app open needed).
+    Actions for every notification type:
+      yes          → immediately log to daily_logs and mark resolved
+      need_15_min  → reschedule slot +15 min, status reset to pending
+      need_30_min  → reschedule slot +30 min, status reset to pending
 
-    Supported actions per notification_type:
-      hydration  → ml_250 / ml_500 / ml_750  : appends hydration entry
-      wake       → i_am_awake                : sets sleep.wake_time = now
-      breakfast / lunch / dinner → light_meal / full_meal / skipped
-      bedtime    → log_now                   : sets sleep.bed_time = now
-      any        → snooze_15 / snooze_30     : reschedules the slot
-      any        → skip                      : marks resolved, no log
+    Logging behaviour per type:
+      wake            → sleep.wake_time = now
+      bedtime         → sleep.bed_time  = now
+      hydration_*     → hydration entry +250 ml
+      breakfast / mid_morning / lunch / afternoon_break /
+      dinner / post_dinner  → nutrition entry for that meal type
     """
-    date = body.date or _today()
+    logger.info(
+        "[QUICK-LOG] ▶ uid=%s  type=%s  slot=%s  action=%s  date=%s",
+        body.uid, body.notification_type, body.slot_label, body.action, body.date,
+    )
+    print(
+        f"[QUICK-LOG] ▶ uid={body.uid}  type={body.notification_type}  "
+        f"slot={body.slot_label}  action={body.action}  date={body.date}"
+    )
+
+    date   = body.date or _today()
     action = body.action
 
     # ── Snooze ──────────────────────────────────────────────────────────────
     if action in SNOOZE_MINUTES:
-        new_time = datetime.now(timezone.utc) + timedelta(minutes=SNOOZE_MINUTES[action])
-        await update_scheduled_utc(
-            firebase_uid=body.uid,
-            date=date,
-            slot_label=body.slot_label,
-            new_scheduled_utc=new_time,
-            new_status="pending",
+        snooze_mins = SNOOZE_MINUTES[action]
+        new_time = datetime.now(timezone.utc) + timedelta(minutes=snooze_mins)
+        print(f"[QUICK-LOG] ⏱ Snoozing {snooze_mins} min → new_utc={new_time.isoformat()}")
+        try:
+            await update_scheduled_utc(
+                firebase_uid=body.uid,
+                date=date,
+                slot_label=body.slot_label,
+                new_scheduled_utc=new_time,
+                new_status="pending",
+            )
+            print(f"[QUICK-LOG] ✅ Snooze saved for slot={body.slot_label}")
+        except Exception as exc:
+            print(f"[QUICK-LOG] ❌ Snooze update_scheduled_utc error: {exc}")
+            logger.error("[QUICK-LOG] Snooze error: %s\n%s", exc, traceback.format_exc())
+            raise
+        return {"status": "snoozed", "resend_in_minutes": snooze_mins}
+
+    # ── Yes — log and resolve ────────────────────────────────────────────────
+    if action != "yes":
+        print(f"[QUICK-LOG] ❌ Unknown action={action!r}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown action '{action}'. Expected 'yes', 'need_15_min', or 'need_30_min'.",
         )
-        return {"status": "snoozed", "resend_in_minutes": SNOOZE_MINUTES[action]}
 
-    # ── Skip ────────────────────────────────────────────────────────────────
-    if action == "skip":
-        await mark_resolved(body.uid, date, body.slot_label, "skipped")
-        return {"status": "ok", "message": "Skipped"}
+    try:
+        user = await _get_user(body.uid)
+        prefs = user.get("notification_prefs") or {}
+        user_tz = prefs.get("timezone", "Asia/Kolkata")
 
-    # ── Hydration ────────────────────────────────────────────────────────────
-    if body.notification_type == "hydration" and action in ML_ACTION_MAP:
-        ml = ML_ACTION_MAP[action]
         logs_col = await get_daily_logs_collection()
-        now_hhmm = _now_hhmm()
+        now_hhmm = _now_hhmm(user_tz)
+        now_utc_iso = datetime.now(timezone.utc).isoformat()
+        print(f"[QUICK-LOG] 🕐 now_hhmm={now_hhmm} (tz={user_tz})  date={date}  uid={body.uid}")
 
-        await logs_col.update_one(
-            {"firebase_uid": body.uid, "date": date},
-            {
-                "$push": {
-                    "hydration.entries": {"time": now_hhmm, "ml": ml, "source": "notification"}
-                },
-                "$inc": {"hydration.total_ml": ml},
-                "$setOnInsert": {"firebase_uid": body.uid, "date": date},
-            },
-            upsert=True,
-        )
-        await mark_resolved(body.uid, date, body.slot_label, action)
-        return {"status": "ok", "message": f"💧 {ml} ml logged", "ml_added": ml}
-
-    # ── Wake time ────────────────────────────────────────────────────────────
-    if body.notification_type == "wake" and action == "i_am_awake":
-        logs_col = await get_daily_logs_collection()
-        now_hhmm = _now_hhmm()
-        await logs_col.update_one(
-            {"firebase_uid": body.uid, "date": date},
-            {
-                "$set": {"sleep.wake_time": now_hhmm},
-                "$setOnInsert": {"firebase_uid": body.uid, "date": date},
-            },
-            upsert=True,
-        )
-        await mark_resolved(body.uid, date, body.slot_label, action)
-        return {"status": "ok", "message": f"☀️ Wake time {now_hhmm} logged"}
-
-    # ── Bedtime ──────────────────────────────────────────────────────────────
-    if body.notification_type == "bedtime" and action == "log_now":
-        logs_col = await get_daily_logs_collection()
-        now_hhmm = _now_hhmm()
-        await logs_col.update_one(
-            {"firebase_uid": body.uid, "date": date},
-            {
-                "$set": {"sleep.bed_time": now_hhmm},
-                "$setOnInsert": {"firebase_uid": body.uid, "date": date},
-            },
-            upsert=True,
-        )
-        await mark_resolved(body.uid, date, body.slot_label, action)
-        return {"status": "ok", "message": f"🌙 Bed time {now_hhmm} logged"}
-
-    # ── Meals ────────────────────────────────────────────────────────────────
-    if body.notification_type in ("breakfast", "lunch", "dinner"):
-        if action in ("light_meal", "full_meal", "skipped"):
-            logs_col = await get_daily_logs_collection()
-            await logs_col.update_one(
+        # ── Wake ────────────────────────────────────────────────────────────
+        if body.notification_type == "wake":
+            print(f"[QUICK-LOG] ☀️ Writing wake_time={now_hhmm} to daily_logs")
+            result = await logs_col.update_one(
                 {"firebase_uid": body.uid, "date": date},
                 {
                     "$set": {
-                        f"nutrition.meal_flags.{body.notification_type}": action
+                        "sleep.wake_time":  now_hhmm,
+                        "sleep.source":     "notification",
+                        "sleep.entry_mode": "notification",
+                        "sleep.logged_at":  now_utc_iso,
                     },
                     "$setOnInsert": {"firebase_uid": body.uid, "date": date},
                 },
                 upsert=True,
             )
-            await mark_resolved(body.uid, date, body.slot_label, action)
-            return {
-                "status": "ok",
-                "message": f"🍽️ {body.notification_type.capitalize()} marked as {action}",
-            }
+            print(
+                f"[QUICK-LOG] ☀️ wake update result — "
+                f"matched={result.matched_count}  modified={result.modified_count}  "
+                f"upserted_id={result.upserted_id}"
+            )
+            await mark_resolved(body.uid, date, body.slot_label, "yes")
+            return {"status": "ok", "message": f"☀️ Wake time {now_hhmm} logged"}
 
-    # ── Generic logged ───────────────────────────────────────────────────────
-    if action == "logged":
-        await mark_resolved(body.uid, date, body.slot_label, "logged")
-        return {"status": "ok", "message": "✅ Logged"}
+        # ── Bedtime ──────────────────────────────────────────────────────────
+        if body.notification_type == "bedtime":
+            print(f"[QUICK-LOG] 🌙 Writing bed_time={now_hhmm} to daily_logs")
+            result = await logs_col.update_one(
+                {"firebase_uid": body.uid, "date": date},
+                {
+                    "$set": {
+                        "sleep.bed_time":   now_hhmm,
+                        "sleep.source":     "notification",
+                        "sleep.entry_mode": "notification",
+                        "sleep.logged_at":  now_utc_iso,
+                    },
+                    "$setOnInsert": {"firebase_uid": body.uid, "date": date},
+                },
+                upsert=True,
+            )
+            print(
+                f"[QUICK-LOG] 🌙 bedtime update result — "
+                f"matched={result.matched_count}  modified={result.modified_count}  "
+                f"upserted_id={result.upserted_id}"
+            )
+            await mark_resolved(body.uid, date, body.slot_label, "yes")
+            return {"status": "ok", "message": f"🌙 Bedtime {now_hhmm} logged"}
 
-    raise HTTPException(
-        status_code=400,
-        detail=f"Unrecognised action '{action}' for type '{body.notification_type}'",
-    )
+        # ── Hydration — 250 ml per slot ──────────────────────────────────────
+        if body.notification_type == "hydration":
+            ml = HYDRATION_ML_PER_SLOT
+            print(f"[QUICK-LOG] 💧 Writing hydration {ml} ml  slot={body.slot_label}")
+            result = await logs_col.update_one(
+                {"firebase_uid": body.uid, "date": date},
+                {
+                    "$push": {
+                        "hydration.entries": {
+                            "amount_ml":       ml,
+                            "logged_time":     now_hhmm,
+                            "estimated_time":  now_hhmm,
+                            "source":          "notification",
+                        }
+                    },
+                    "$inc":         {"hydration.total_ml": ml},
+                    "$set":         {"updated_at": datetime.now(timezone.utc)},
+                    "$setOnInsert": {"firebase_uid": body.uid, "date": date},
+                },
+                upsert=True,
+            )
+            print(
+                f"[QUICK-LOG] 💧 hydration update result — "
+                f"matched={result.matched_count}  modified={result.modified_count}  "
+                f"upserted_id={result.upserted_id}"
+            )
+            await mark_resolved(body.uid, date, body.slot_label, "yes")
+            return {"status": "ok", "message": f"💧 {ml} ml logged", "ml_added": ml}
+
+        # ── Nutrition — all 6 meal types ─────────────────────────────────────
+        if body.notification_type in NUTRITION_MEAL_TYPES:
+            meal_type = body.notification_type
+            print(f"[QUICK-LOG] 🍽️ Writing nutrition meal_type={meal_type}")
+            result = await logs_col.update_one(
+                {"firebase_uid": body.uid, "date": date},
+                {
+                    "$push": {
+                        "nutrition.entries": {
+                            "meal_type":      meal_type,
+                            "logged_time":    now_hhmm,
+                            "estimated_time": now_hhmm,
+                            "source":         "notification",
+                            "items":          [],
+                        }
+                    },
+                    "$set":         {"updated_at": datetime.now(timezone.utc)},
+                    "$setOnInsert": {"firebase_uid": body.uid, "date": date},
+                },
+                upsert=True,
+            )
+            print(
+                f"[QUICK-LOG] 🍽️ nutrition update result — "
+                f"matched={result.matched_count}  modified={result.modified_count}  "
+                f"upserted_id={result.upserted_id}"
+            )
+            await mark_resolved(body.uid, date, body.slot_label, "yes")
+            msg = f"🍽️ {meal_type.replace('_', ' ').title()} logged at {now_hhmm}"
+            print(f"[QUICK-LOG] ✅ {msg}")
+            return {"status": "ok", "message": msg}
+
+        print(f"[QUICK-LOG] ❌ Unrecognised notification_type={body.notification_type!r}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unrecognised notification_type '{body.notification_type}'",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        tb = traceback.format_exc()
+        print(f"[QUICK-LOG] ❌ EXCEPTION: {exc}\n{tb}")
+        logger.error("[QUICK-LOG] Unhandled exception: %s\n%s", exc, tb)
+        raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
 
 @router.post("/send-test", summary="Send a test FCM notification to a user")
@@ -341,12 +444,21 @@ async def send_test(body: SendTestRequest):
 async def get_status(uid: str = Query(...), date: Optional[str] = Query(None)):
     date = date or _today()
     states = await get_user_states_for_date(uid, date)
-    # Convert datetime objects to ISO strings for JSON
+    # Convert datetime objects to ISO strings for JSON.
+    # Motor returns timezone-naive datetimes from MongoDB (UTC stored values).
+    # We must tag them as UTC (+00:00) before serialising so that Flutter's
+    # DateTime.parse(...).toLocal() correctly converts them to device local time.
     serialised = []
     for s in states:
         row = {}
         for k, v in s.items():
-            row[k] = v.isoformat() if isinstance(v, datetime) else v
+            if isinstance(v, datetime):
+                # Ensure UTC tzinfo is attached before calling isoformat()
+                if v.tzinfo is None:
+                    v = v.replace(tzinfo=timezone.utc)
+                row[k] = v.isoformat()   # e.g. "2026-02-21T04:17:00+00:00"
+            else:
+                row[k] = v
         serialised.append(row)
     return {"uid": uid, "date": date, "states": serialised, "count": len(serialised)}
 

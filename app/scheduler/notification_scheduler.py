@@ -17,6 +17,7 @@ asyncio event loop as FastAPI, avoiding thread-safety issues with Motor.
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
+from functools import partial
 from typing import Optional
 
 import pytz
@@ -38,19 +39,35 @@ DB_NAME = settings.MONGO_DB_NAME
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Default notification prefs (used when user hasn't set preferences)
+# Default notification prefs — 16 fixed slots, always enabled.
+#
+#   Sleep (2):     wake, bedtime
+#   Nutrition (6): breakfast, mid_morning, lunch, afternoon_break,
+#                  dinner, post_dinner
+#   Hydration (8): hydration_1 … hydration_8 (250 ml each = 2 L/day)
 # ─────────────────────────────────────────────────────────────────────────────
 
 DEFAULT_PREFS = {
-    "enabled": False,
-    "timezone": "UTC",
-    "wake_time": "07:00",
-    "breakfast_time": "08:00",
-    "lunch_time": "13:00",
-    "dinner_time": "19:30",
-    "bedtime_time": "22:30",
-    "hydration_interval_hours": 3,
-    "custom_slots": [],
+    "timezone": "Asia/Kolkata",
+    # Sleep
+    "wake_time":            "07:00",
+    "bedtime_time":         "22:30",
+    # Nutrition
+    "breakfast_time":       "08:00",
+    "mid_morning_time":     "10:30",
+    "lunch_time":           "13:00",
+    "afternoon_break_time": "16:00",
+    "dinner_time":          "19:30",
+    "post_dinner_time":     "21:00",
+    # Hydration — equal spread between wake (07:00) and bedtime (22:30)
+    "hydration_1_time":     "08:45",
+    "hydration_2_time":     "10:30",
+    "hydration_3_time":     "12:15",
+    "hydration_4_time":     "14:00",
+    "hydration_5_time":     "15:45",
+    "hydration_6_time":     "17:30",
+    "hydration_7_time":     "19:15",
+    "hydration_8_time":     "21:00",
 }
 
 
@@ -74,64 +91,80 @@ def _parse_local_time(time_str: str, date_str: str, tz_name: str) -> datetime:
     return local_dt.astimezone(pytz.utc)
 
 
-def _build_schedule(user_doc: dict, date_str: str) -> list[dict]:
+def _build_schedule(user_doc: dict, date_str: str, skip_past: bool = True) -> list[dict]:
     """
     Build today's notification schedule for a user.
+
+    Always enabled — 16 fixed slots:
+      Sleep (2):     wake, bedtime
+      Nutrition (6): breakfast, mid_morning, lunch, afternoon_break,
+                     dinner, post_dinner
+      Hydration (8): hydration_1 … hydration_8 (250 ml each)
+
+    When skip_past=True (default, used by midnight seed), slots whose
+    scheduled_utc is already in the past are skipped to avoid a burst of
+    stale notifications.
+
+    When skip_past=False (used by save_preferences), ALL 16 slots are
+    returned so that editing a past-due time still updates the stored
+    scheduled_utc in MongoDB.
+
     Returns list of {slot_label, notification_type, scheduled_utc}.
     """
     prefs = {**DEFAULT_PREFS, **(user_doc.get("notification_prefs") or {})}
+    tz_name = prefs.get("timezone", "Asia/Kolkata")
+    now_utc = datetime.now(timezone.utc)
 
-    if not prefs.get("enabled", False):
-        return []
-
-    tz_name = prefs.get("timezone", "UTC")
     slots = []
 
-    # Fixed slots
-    fixed = [
-        ("wake",      "wake_time"),
-        ("breakfast", "breakfast_time"),
-        ("lunch",     "lunch_time"),
-        ("dinner",    "dinner_time"),
-        ("bedtime",   "bedtime_time"),
+    # ── Sleep (2) ─────────────────────────────────────────────────────────
+    sleep_map = [
+        ("wake",    "wake_time"),
+        ("bedtime", "bedtime_time"),
     ]
-    for notif_type, pref_key in fixed:
-        t = prefs.get(pref_key)
+    for notif_type, key in sleep_map:
+        t = prefs.get(key)
         if t:
-            slots.append({
-                "slot_label": notif_type,
-                "notification_type": notif_type,
-                "scheduled_utc": _parse_local_time(t, date_str, tz_name),
-            })
+            utc = _parse_local_time(t, date_str, tz_name)
+            if not skip_past or utc >= now_utc:
+                slots.append({
+                    "slot_label":        notif_type,
+                    "notification_type": notif_type,
+                    "scheduled_utc":     utc,
+                })
 
-    # Hydration slots  — spread evenly from wake_time to bedtime_time
-    interval_h = float(prefs.get("hydration_interval_hours", 3))
-    wake_str   = prefs.get("wake_time", "07:00")
-    bed_str    = prefs.get("bedtime_time", "22:30")
-    wake_utc   = _parse_local_time(wake_str, date_str, tz_name)
-    bed_utc    = _parse_local_time(bed_str,  date_str, tz_name)
-
-    current = wake_utc + timedelta(hours=interval_h)
-    idx = 1
-    while current < bed_utc:
-        slots.append({
-            "slot_label": f"hydration_{idx}",
-            "notification_type": "hydration",
-            "scheduled_utc": current,
-        })
-        current += timedelta(hours=interval_h)
-        idx += 1
-
-    # Custom slots
-    for cs in prefs.get("custom_slots", []):
-        label = cs.get("label", f"custom_{idx}")
-        t     = cs.get("time")
+    # ── Nutrition (6) ─────────────────────────────────────────────────────
+    nutrition_map = [
+        ("breakfast",       "breakfast_time"),
+        ("mid_morning",     "mid_morning_time"),
+        ("lunch",           "lunch_time"),
+        ("afternoon_break", "afternoon_break_time"),
+        ("dinner",          "dinner_time"),
+        ("post_dinner",     "post_dinner_time"),
+    ]
+    for notif_type, key in nutrition_map:
+        t = prefs.get(key)
         if t:
-            slots.append({
-                "slot_label": label,
-                "notification_type": "custom",
-                "scheduled_utc": _parse_local_time(t, date_str, tz_name),
-            })
+            utc = _parse_local_time(t, date_str, tz_name)
+            if not skip_past or utc >= now_utc:
+                slots.append({
+                    "slot_label":        notif_type,
+                    "notification_type": notif_type,
+                    "scheduled_utc":     utc,
+                })
+
+    # ── Hydration (8) ─────────────────────────────────────────────────────
+    for idx in range(1, 9):
+        key = f"hydration_{idx}_time"
+        t = prefs.get(key)
+        if t:
+            utc = _parse_local_time(t, date_str, tz_name)
+            if not skip_past or utc >= now_utc:
+                slots.append({
+                    "slot_label":        f"hydration_{idx}",
+                    "notification_type": "hydration",
+                    "scheduled_utc":     utc,
+                })
 
     return slots
 
@@ -246,7 +279,9 @@ async def run_notification_cycle() -> dict:
                 uid=uid, slot_label=slot_label, date=date_str,
                 is_reminder=False, reminder_count=0,
             )
-            result = send_data_message(token, data)
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, partial(send_data_message, token, data)
+            )
             if result.success:
                 await upsert_state(
                     firebase_uid=uid, date=date_str,
@@ -270,7 +305,9 @@ async def run_notification_cycle() -> dict:
                     uid=uid, slot_label=slot_label, date=date_str,
                     is_reminder=True, reminder_count=1,
                 )
-                result = send_data_message(token, data)
+                result = await asyncio.get_event_loop().run_in_executor(
+                    None, partial(send_data_message, token, data)
+                )
                 if result.success:
                     await upsert_state(
                         firebase_uid=uid, date=date_str,
@@ -289,7 +326,9 @@ async def run_notification_cycle() -> dict:
                     uid=uid, slot_label=slot_label, date=date_str,
                     is_reminder=True, reminder_count=2,
                 )
-                result = send_data_message(token, data)
+                result = await asyncio.get_event_loop().run_in_executor(
+                    None, partial(send_data_message, token, data)
+                )
                 if result.success:
                     await upsert_state(
                         firebase_uid=uid, date=date_str,
@@ -304,6 +343,8 @@ async def run_notification_cycle() -> dict:
             if isinstance(r30, datetime) and r30.tzinfo is None:
                 r30 = r30.replace(tzinfo=timezone.utc)
             if r30 and now >= r30 + timedelta(minutes=settings.REMINDER_15_MINUTES):
+                # All types expire after the third reminder — user can
+                # always re-snooze via the need_15_min / need_30_min buttons.
                 await upsert_state(
                     firebase_uid=uid, date=date_str,
                     slot_label=slot_label, notification_type=notif_type,

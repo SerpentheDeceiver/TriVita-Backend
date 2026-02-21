@@ -35,8 +35,9 @@ def _today() -> str:
 
 
 def _now_hhmm() -> str:
-    now = datetime.now()          # local server time (IST)
-    return now.strftime("%H:%M")
+    """Return current time as HH:MM in IST (Asia/Kolkata)."""
+    import pytz
+    return datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%H:%M")
 
 
 def _parse_to_minutes(t: str) -> int:
@@ -146,18 +147,26 @@ async def log_sleep(
     firebase_uid = uid
     today        = _today()
 
-    # ── Conflict check: only one sleep log per day ────────────────────────
+    # ── Conflict check: only block if a *complete* sleep entry (with hours)
+    # already exists.  Partial entries from wake/bedtime notifications
+    # (only wake_time or bed_time, no hours) are allowed to be replaced.
     existing = await logs_col.find_one(
         {"firebase_uid": firebase_uid, "date": today},
         {"sleep": 1},
     )
-    if existing and existing.get("sleep"):
+    existing_sleep = (existing or {}).get("sleep") or {}
+    if existing_sleep.get("hours") is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Sleep already logged for today. Only one sleep entry per day is allowed.",
         )
 
     sleep_doc = _compute_sleep_fields(body)
+    # Preserve any partial wake/bedtime already set from notifications
+    if not sleep_doc.get("wake_time") and existing_sleep.get("wake_time"):
+        sleep_doc["wake_time"] = existing_sleep["wake_time"]
+    if not sleep_doc.get("bed_time") and existing_sleep.get("bed_time"):
+        sleep_doc["bed_time"] = existing_sleep["bed_time"]
 
     # Upsert: create day doc if it doesn't exist, then set sleep section
     await logs_col.update_one(
@@ -188,7 +197,8 @@ async def log_hydration(
 ):
     firebase_uid = uid
     today        = _today()
-    logged_time    = _now_hhmm()
+    # Prefer the device-local time sent by the client; fall back to server IST.
+    logged_time    = body.logged_time or _now_hhmm()
     estimated_time = body.estimated_time or logged_time
 
     entry = {"amount_ml": body.amount_ml, "estimated_time": estimated_time, "logged_time": logged_time}
@@ -223,7 +233,8 @@ async def log_nutrition(
 ):
     firebase_uid = uid
     today        = _today()
-    logged_time    = _now_hhmm()
+    # Prefer the device-local time sent by the client; fall back to server IST.
+    logged_time    = body.logged_time or _now_hhmm()
     estimated_time = body.estimated_time or logged_time
 
     # Compute per-item totals and meal subtotal

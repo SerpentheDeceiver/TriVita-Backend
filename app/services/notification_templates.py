@@ -1,22 +1,22 @@
 """
-Notification payload templates.
+Notification payload templates — 16 slots total.
 
-Each template defines:
-  - title / body text for the notification
-  - `actions`: list of action_ids the Flutter client will show as buttons
-  - `data` fields that are always included in the FCM data payload
+  Sleep (2):     wake, bedtime
+  Nutrition (6): breakfast, mid_morning, lunch, afternoon_break, dinner, post_dinner
+  Hydration (8): hydration_1 … hydration_8  (all use the 'hydration' type)
 
-Action IDs understood by the Flutter quick-log handler:
-  Hydration:  ml_250 | ml_500 | ml_750 | skip
-  Wake:       i_am_awake | snooze_15 | snooze_30
-  Meals:      light_meal | full_meal | skipped | snooze_15
-  Bedtime:    log_now | snooze_30
-  Custom:     logged | skip
+All notifications use a unified 3-action system:
+  yes          → log the action immediately
+  need_15_min  → snooze 15 minutes, resend
+  need_30_min  → snooze 30 minutes, resend
 
-The FCM data dict that gets sent to the device must contain only strings.
+This acts as a quick-tap micro-logging system — every notification is
+actionable in one tap without opening the app.
+
+The FCM data dict sent to the device must contain only string values.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -25,8 +25,13 @@ class NotificationTemplate:
     notification_type: str
     title: str
     body: str
-    actions: list[str]          # ordered list of action_ids for the client
-    emoji: str = ""             # leading emoji for display
+    emoji: str = ""
+    # All templates use the same 3-action quick-log system
+    actions: list[str] = None  # type: ignore
+
+    def __post_init__(self):
+        if self.actions is None:
+            self.actions = ["yes", "need_15_min", "need_30_min"]
 
     def to_fcm_data(
         self,
@@ -44,106 +49,117 @@ class NotificationTemplate:
         prefix = "⏰ Reminder: " if is_reminder else ""
         return {
             "notification_type": self.notification_type,
-            "slot_label": slot_label,
-            "date": date,
-            "uid": uid,
-            "title": prefix + self.title,
-            "body": self.body,
-            "actions": ",".join(self.actions),   # Flutter splits on ","
-            "is_reminder": str(is_reminder).lower(),
-            "reminder_count": str(reminder_count),
-            "emoji": self.emoji,
+            "slot_label":        slot_label,
+            "date":              date,
+            "uid":               uid,
+            "title":             prefix + self.title,
+            "body":              self.body,
+            "actions":           ",".join(self.actions),  # Flutter splits on ","
+            "is_reminder":       str(is_reminder).lower(),
+            "reminder_count":    str(reminder_count),
+            "emoji":             self.emoji,
         }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Template registry
+# 16-template registry
 # ─────────────────────────────────────────────────────────────────────────────
 
 TEMPLATES: dict[str, NotificationTemplate] = {
+
+    # ── Sleep (2) ─────────────────────────────────────────────────────────────
     "wake": NotificationTemplate(
         notification_type="wake",
         title="Good morning! ☀️",
-        body="How was your sleep last night? Tap to log it.",
-        actions=["i_am_awake", "snooze_15"],
+        body="Time to rise! Tap Yes to log your wake time.",
         emoji="☀️",
     ),
+    "bedtime": NotificationTemplate(
+        notification_type="bedtime",
+        title="Bedtime 🌙",
+        body="Heading to bed? Tap Yes to log your sleep.",
+        emoji="🌙",
+    ),
+
+    # ── Nutrition (6) ─────────────────────────────────────────────────────────
     "breakfast": NotificationTemplate(
         notification_type="breakfast",
         title="Breakfast time 🍳",
-        body="Start the day right — log your morning meal.",
-        actions=["light_meal", "full_meal", "skipped", "snooze_15"],
+        body="Start your day right — tap Yes to log breakfast.",
         emoji="🍳",
+    ),
+    "mid_morning": NotificationTemplate(
+        notification_type="mid_morning",
+        title="Mid-morning snack 🍎",
+        body="Mid-morning bite? Tap Yes to log it.",
+        emoji="🍎",
     ),
     "lunch": NotificationTemplate(
         notification_type="lunch",
-        title="Lunch check 🥗",
-        body="Midday refuel — what did you eat?",
-        actions=["light_meal", "full_meal", "skipped", "snooze_15"],
+        title="Lunch time 🥗",
+        body="Midday refuel — tap Yes to log your lunch.",
         emoji="🥗",
+    ),
+    "afternoon_break": NotificationTemplate(
+        notification_type="afternoon_break",
+        title="Afternoon snack 🍪",
+        body="Afternoon snack time! Tap Yes to log it.",
+        emoji="🍪",
     ),
     "dinner": NotificationTemplate(
         notification_type="dinner",
         title="Dinner time 🍽️",
-        body="Evening meal — log it to track your nutrition.",
-        actions=["light_meal", "full_meal", "skipped", "snooze_30"],
+        body="Evening meal — tap Yes to log your dinner.",
         emoji="🍽️",
     ),
+    "post_dinner": NotificationTemplate(
+        notification_type="post_dinner",
+        title="Post-dinner 🍵",
+        body="After-dinner snack or tea? Tap Yes to log it.",
+        emoji="🍵",
+    ),
+
+    # ── Hydration (8 slots share this template; slot_label differentiates) ────
     "hydration": NotificationTemplate(
         notification_type="hydration",
         title="Hydration check 💧",
-        body="Time to drink some water! How much will you log?",
-        actions=["ml_250", "ml_500", "ml_750", "skip"],
+        body="Time to drink 250 ml of water! Tap Yes to log it.",
         emoji="💧",
-    ),
-    "bedtime": NotificationTemplate(
-        notification_type="bedtime",
-        title="Winding down? 🌙",
-        body="Nearly time for bed — log your bedtime now.",
-        actions=["log_now", "snooze_30"],
-        emoji="🌙",
-    ),
-    "custom": NotificationTemplate(
-        notification_type="custom",
-        title="Health reminder 📋",
-        body="Don't forget to log your health data.",
-        actions=["logged", "skip"],
-        emoji="📋",
     ),
 }
 
 
 def get_template(notification_type: str) -> NotificationTemplate:
-    return TEMPLATES.get(notification_type, TEMPLATES["custom"])
+    """Return the template for notification_type, defaulting to hydration."""
+    return TEMPLATES.get(notification_type, TEMPLATES["hydration"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Action → log mapping  (used by /quick-log route)
+# Action mappings  (used by /quick-log route)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Maps (notification_type, action_id) → what to write in daily_logs
+# Human-readable label for each resolved action (stored in action_taken field)
 ACTION_LABEL_MAP: dict[str, str] = {
-    "ml_250":      "Added 250 ml water",
-    "ml_500":      "Added 500 ml water",
-    "ml_750":      "Added 750 ml water",
-    "skip":        "Skipped",
-    "i_am_awake":  "Wake time logged",
-    "snooze_15":   "Snoozed 15 min",
-    "snooze_30":   "Snoozed 30 min",
-    "light_meal":  "Logged light meal",
-    "full_meal":   "Logged full meal",
-    "skipped":     "Meal skipped",
-    "log_now":     "Bedtime logged",
-    "logged":      "Logged",
+    "yes":          "Logged ✓",
+    "need_15_min":  "Snoozed 15 min",
+    "need_30_min":  "Snoozed 30 min",
 }
 
-ML_ACTION_MAP: dict[str, int] = {
-    "ml_250": 250,
-    "ml_500": 500,
-    "ml_750": 750,
-}
+# Hydration: "yes" always logs 250 ml (equal portion across 8 slots = 2 L/day)
+HYDRATION_ML_PER_SLOT: int = 250
 
+# Snooze durations in minutes — used by the scheduler and quick-log handler
 SNOOZE_MINUTES: dict[str, int] = {
-    "snooze_15": 15,
-    "snooze_30": 30,
+    "need_15_min": 15,
+    "need_30_min": 30,
+}
+
+# Backwards-compat alias (old code may import ML_ACTION_MAP)
+ML_ACTION_MAP: dict[str, int] = {
+    "yes": HYDRATION_ML_PER_SLOT,
+}
+
+# Nutrition meal types that are handled by the quick-log endpoint
+NUTRITION_MEAL_TYPES: set[str] = {
+    "breakfast", "mid_morning", "lunch", "afternoon_break", "dinner", "post_dinner"
 }

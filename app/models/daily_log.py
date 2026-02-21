@@ -47,6 +47,7 @@ class SleepLogRequest(BaseModel):
 class HydrationLogRequest(BaseModel):
     amount_ml      : int           = Field(..., gt=0, le=5000, description="ml of water consumed")
     estimated_time : Optional[str] = Field(None, description="HH:MM 24-hr — predefined slot / scheduled time")
+    logged_time    : Optional[str] = Field(None, description="HH:MM 24-hr — device local time when user tapped log")
 
 
 # ── Nutrition ────────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ class FoodItem(BaseModel):
 class NutritionLogRequest(BaseModel):
     meal_type      : str            = Field(..., description="breakfast|mid_morning|lunch|afternoon_break|dinner|post_dinner|other")
     estimated_time : Optional[str]  = Field(None, description="HH:MM 24-hr — predefined meal / scheduled time")
+    logged_time    : Optional[str]  = Field(None, description="HH:MM 24-hr — device local time when user tapped log")
     items          : list[FoodItem] = Field(..., min_length=1)
 
 

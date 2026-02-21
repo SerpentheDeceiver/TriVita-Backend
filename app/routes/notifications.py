@@ -183,13 +183,12 @@ async def save_preferences(body: NotificationPrefsRequest):
         raise HTTPException(status_code=404, detail="User not found.")
 
     # Seed today's slots immediately when preferences are saved.
-    # _build_schedule skips any slot whose scheduled_utc is already past.
+    # We use skip_past=True so that if the user saves their schedule at 11:00 AM,
+    # slots like "Breakfast" at 8:00 AM are NOT seeded and won't fire immediately.
     today = _today()
     user  = await _get_user(body.uid)
     from app.scheduler.notification_scheduler import _build_schedule
-    # skip_past=False so user-edited times are always written to MongoDB,
-    # even if the slot time has already passed today.
-    slots = _build_schedule(user, today, skip_past=False)
+    slots = _build_schedule(user, today, skip_past=True)
     for slot in slots:
         await upsert_state(
             firebase_uid=body.uid,

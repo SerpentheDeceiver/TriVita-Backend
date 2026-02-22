@@ -1,46 +1,218 @@
-# 🏥 TriVita Backend — API Reference
+# 🏥 TriVita
 
-TriVita Backend is a robust FastAPI service powering the TriVita health and wellness ecosystem. It handles user profiles, health data logging, AI-driven insights, and a sophisticated notification scheduler.
-
-## 🚀 Key Features
-
-- **Consolidated Notification System**: Simplified 4-toggle management (Global, Sleep, Nutrition, Hydration).
-- **Automated Scheduling**: Precise notification seeding and 5-minute cycle processing.
-- **AI Health Insights**: Personalized sleep and hydration analysis using Groq LLM.
-- **Predictive Analytics**: Machine learning models (scikit-learn) for sleep risk and weight projection.
-- **Scalable Architecture**: Built with FastAPI and MongoDB (Motor/Async).
+This document explains the **Backend folder architecture** of the TriVita Health Monitoring System. It focuses strictly on backend components, structure, and responsibilities.
 
 ---
 
-## 🏗️ Technical Stack
+# 📁 Backend Folder Structure
 
-- **Framework**: FastAPI
-- **Database**: MongoDB (Motor / Atlas)
-- **AI/LLM**: Groq (Llama-3.3-70B)
-- **ML Engine**: Scikit-Learn
-- **Scheduler**: Async APScheduler
-- **Push Notifications**: Firebase Admin (FCM)
-
----
-
-## 📁 Project Structure
-
-```text
+```
 Backend/
 ├── app/
-│   ├── agents/          # AI logic (Chatbot, Nutrition)
-│   ├── core/            # Config and global settings
-│   ├── db/              # MongoDB connection and state helpers
-│   ├── models/          # Pydantic schemas for API and DB
-│   ├── routes/          # FastAPI endpoint definitions
-│   ├── scheduler/       # Notification background tasks
-│   ├── services/        # Business logic (FCM, scoring, formulas)
-│   ├── mcp/             # Model Context Protocol (AI data access)
-│   └── main.py          # Application entry point
-├── .env.example         # Example environment variables
-├── requirements.txt     # Python dependencies
-└── README.md            # Documentation
+│   ├── agents/
+│   ├── routes/
+│   ├── scheduler/
+│   ├── services/
+│   ├── db/
+│   ├── models/
+│   ├── mcp/
+│   ├── graph/
+│   └── main.py
+├── firebase_service_account.json
+├── requirements.txt
+└── README.md
 ```
+
+---
+
+# 🧠 app/ (Core Application Layer)
+
+The `app/` directory contains the entire backend application logic. It is modular and separated by responsibility to ensure scalability and maintainability.
+
+---
+
+## 1️⃣ agents/
+
+Contains domain-specific AI agents responsible for health intelligence.
+
+### Responsibilities:
+- Sleep analysis agent
+- Hydration analysis agent
+- Nutrition analysis agent
+- Risk & predictive agent
+- AI reasoning logic
+- Prompt engineering & structured outputs
+
+Each agent processes structured health logs and produces insights or recommendations.
+
+---
+
+## 2️⃣ routes/
+
+Defines all FastAPI API endpoints.
+
+### Responsibilities:
+- Profile creation and retrieval
+- Health log submission
+- Notification preference management
+- AI chatbot endpoint
+- Predictive analytics endpoint
+- Sleep insight endpoint
+
+Each route:
+- Validates input using Pydantic models
+- Calls appropriate service layer logic
+- Returns structured JSON responses
+
+---
+
+## 3️⃣ scheduler/
+
+Handles the background notification engine.
+
+### Responsibilities:
+- Seeds 16 daily micro-log slots
+- Runs every 5 minutes using APScheduler
+- Checks toggle flags before sending notifications
+- Tracks slot state (generated, sent, resolved, missed)
+- Triggers Firebase Cloud Messaging (FCM)
+
+This ensures consistent micro-logging reminders.
+
+---
+
+## 4️⃣ services/
+
+Contains core business logic separate from routes.
+
+### Responsibilities:
+- BMR / TDEE calculation
+- Hydration & sleep scoring formulas
+- Wellness score computation
+- Notification slot generation logic
+- Firebase push notification handling
+- Predictive model loading and execution
+
+Routes call services to maintain clean architecture separation.
+
+---
+
+## 5️⃣ db/
+
+Manages MongoDB interaction and persistent state.
+
+### Responsibilities:
+- MongoDB client initialization (Motor Async)
+- Database connection pooling
+- User document management
+- Log storage
+- Notification slot persistence
+- Query helpers
+
+All database operations are centralized here.
+
+---
+
+## 6️⃣ models/
+
+Contains Pydantic schemas used for:
+
+- Request validation
+- Response formatting
+- Database data structure consistency
+- Type safety enforcement
+
+Ensures strict API contracts and structured data flow.
+
+---
+
+## 7️⃣ mcp/
+
+Implements the Model Context Protocol layer.
+
+### Responsibilities:
+- Shared health state management
+- Tool-calling interface for AI agents
+- Unified data access for multi-agent reasoning
+- Context injection into AI prompts
+
+Ensures all AI agents reason over the same updated health state.
+
+---
+
+## 8️⃣ graph/
+
+Contains LangGraph-based AI workflow definitions.
+
+### Responsibilities:
+- Multi-agent orchestration
+- Agent sequencing logic
+- Cross-signal reasoning flow
+- Conditional execution paths
+
+Defines how agents collaborate within a structured reasoning pipeline.
+
+---
+
+## 9️⃣ main.py
+
+Application entry point.
+
+### Responsibilities:
+- FastAPI app initialization
+- Middleware configuration
+- Router inclusion
+- Startup & shutdown events
+- Scheduler initialization
+- Environment configuration loading
+
+This file bootstraps the entire backend system.
+
+---
+
+# 🔐 Supporting Files
+
+## firebase_service_account.json
+- Firebase Admin SDK credentials
+- Used for push notifications via FCM
+- Loaded securely using environment configuration
+
+## requirements.txt
+Contains all backend dependencies:
+- FastAPI
+- Uvicorn
+- Motor (MongoDB async driver)
+- APScheduler
+- Firebase Admin
+- Groq SDK
+- Scikit-learn
+- Pandas / NumPy
+- ReportLab
+
+---
+
+## 🔌 Core API Endpoints
+
+### 1. Profile (`/profile`)
+- `POST /profile/create`: Register user and compute personalized daily targets.
+- `GET /profile/{uid}`: Retrieve full profile including targets and preferences.
+
+### 2. Notifications (`/notifications`)
+- `GET /preferences?uid=<uid>`: Fetch current toggles and scheduled times.
+- `POST /preferences`: Save and sync schedule. This auto-seeds today's notification slots.
+- `GET /status?uid=<uid>&date=<YYYY-MM-DD>`: Live tracker of generated/sent/resolved slots.
+- `POST /register-token`: Update FCM token for push delivery.
+
+### 3. Health Logging (`/log`)
+- `POST /log/sleep`: Log sleep duration and quality.
+- `POST /log/hydration`: Record water intake.
+- `POST /log/nutrition`: Log meals with macro breakdown.
+- `GET /log/today`: Fetch all logs and current Wellness/Sleep/Hydration scores.
+
+### 4. AI & Analytics (`/chatbot`, `/analytics`, `/predictive`)
+- `POST /chatbot/chat`: Dynamic health assistant with full contextual awareness.
+- `GET /sleep/ai-insights`: Deep dive into sleep patterns and root causes.
+- `GET /predictive/analysis`: ML-powered risk probability and trend clusters.
 
 ---
 
@@ -77,37 +249,24 @@ Backend/
 
 ---
 
-## 🔌 Core API Endpoints
+## 🏗️ Technical Stack
 
-### 1. Profile (`/profile`)
-- `POST /profile/create`: Register user and compute personalized daily targets.
-- `GET /profile/{uid}`: Retrieve full profile including targets and preferences.
-
-### 2. Notifications (`/notifications`)
-- `GET /preferences?uid=<uid>`: Fetch current toggles and scheduled times.
-- `POST /preferences`: Save and sync schedule. This auto-seeds today's notification slots.
-- `GET /status?uid=<uid>&date=<YYYY-MM-DD>`: Live tracker of generated/sent/resolved slots.
-- `POST /register-token`: Update FCM token for push delivery.
-
-### 3. Health Logging (`/log`)
-- `POST /log/sleep`: Log sleep duration and quality.
-- `POST /log/hydration`: Record water intake.
-- `POST /log/nutrition`: Log meals with macro breakdown.
-- `GET /log/today`: Fetch all logs and current Wellness/Sleep/Hydration scores.
-
-### 4. AI & Analytics (`/chatbot`, `/analytics`, `/predictive`)
-- `POST /chatbot/chat`: Dynamic health assistant with full contextual awareness.
-- `GET /sleep/ai-insights`: Deep dive into sleep patterns and root causes.
-- `GET /predictive/analysis`: ML-powered risk probability and trend clusters.
+- **Framework**: FastAPI
+- **Database**: MongoDB (Motor / Atlas)
+- **AI/LLM**: Groq (Llama-3.3-70B)
+- **ML Engine**: Scikit-Learn
+- **Scheduler**: Async APScheduler
+- **Push Notifications**: Firebase Admin (FCM)
 
 ---
 
-## 🔒 Notification Logic
+# To-Note:
 
-TriVita uses 16 daily micro-log reminders:
-- **Sleep (2)**: Wake & Bedtime.
-- **Nutrition (6)**: 6 strategic meal windows.
-- **Hydration (8)**: 250ml units spaced across the active day.
+The TriVita Backend is a modular, AI-integrated FastAPI system that:
 
-**Consolidated Toggles**:
-The system respects 4 master flags: `global_enabled`, `sleep_enabled`, `nutrition_enabled`, and `hydration_enabled`. If a category is disabled, the scheduler skips generating those specific slots for the day.
+- Handles user profiles and health logs
+- Manages a 16-slot micro-notification engine
+- Executes multi-agent AI reasoning
+- Computes real-time wellness scoring
+- Performs predictive health analytics
+- Maintains persistent health state in MongoDB

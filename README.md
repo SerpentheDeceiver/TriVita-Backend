@@ -1,6 +1,6 @@
 # 🏥 TriVita
 
-This document explains the **Backend folder architecture** of the TriVita Health Monitoring System. It focuses strictly on backend components, structure, and responsibilities.
+TriVita is an intelligent health and wellness platform designed to bridge the gap between data logging and actionable health improvements. Unlike traditional trackers, TriVita uses a high-frequency **Micro-Logging** approach combined with **Domain-Specific AI Agents** to provide users with real-time feedback and long-term predictive health trends.
 
 ---
 

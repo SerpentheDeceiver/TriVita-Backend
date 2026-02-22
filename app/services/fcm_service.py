@@ -1,10 +1,4 @@
-"""
-FCM (Firebase Cloud Messaging) service using firebase-admin SDK.
-
-Sends DATA-ONLY messages (no `notification` key) so the Flutter
-background handler is always invoked, giving full control over
-notification appearance and action buttons on client side.
-"""
+# FCM service for sending data-only push notifications.
 
 import logging
 from dataclasses import dataclass
@@ -18,10 +12,6 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Firebase Admin initialisation (idempotent)
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _ensure_firebase_app() -> None:
     """Initialise firebase-admin once; safe to call multiple times."""
     if not firebase_apps:
@@ -33,21 +23,11 @@ def _ensure_firebase_app() -> None:
             logger.error("Firebase Admin init failed: %s", exc)
             raise
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Result dataclass
-# ─────────────────────────────────────────────────────────────────────────────
-
 @dataclass
 class FCMResult:
     success: bool
     message_id: Optional[str] = None
     error: Optional[str] = None
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Send helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 def send_data_message(
     fcm_token: str,
@@ -55,12 +35,7 @@ def send_data_message(
     *,
     android_priority: str = "high",
 ) -> FCMResult:
-    """
-    Send a data-only FCM message to a single device token.
-
-    All values in `data` must be strings (FCM requirement).
-    Returns FCMResult(success, message_id | error).
-    """
+    """Send a data-only FCM message to a single device token."""
     _ensure_firebase_app()
 
     # FCM requires all data values to be strings
@@ -99,10 +74,7 @@ def send_data_message(
 def send_batch(
     token_data_pairs: list[tuple[str, dict[str, str]]],
 ) -> list[FCMResult]:
-    """
-    Send data-only FCM messages to multiple tokens.
-    Returns list of FCMResult in the same order as input.
-    """
+    """Send data-only FCM messages to multiple tokens."""
     _ensure_firebase_app()
 
     if not token_data_pairs:

@@ -1,5 +1,5 @@
 """
-AI Health Assistant Chatbot with MCP Integration
+AI Health Assistant Chatbot Agent
 Uses in-process MCP client for memory management and database access.
 Uses Groq LLM (llama-3.3-70b-versatile) for conversational AI.
 """
@@ -29,10 +29,6 @@ class HealthAssistantChatbot:
             self._mcp = await get_mcp_client()
         return self._mcp
 
-    # ──────────────────────────────────────────────────────────────────────
-    # System prompt
-    # ──────────────────────────────────────────────────────────────────────
-
     def get_system_prompt(self, ctx: Dict[str, Any]) -> str:
         name   = ctx.get("name", "there")
         age    = ctx.get("age", "unknown")
@@ -41,19 +37,16 @@ class HealthAssistantChatbot:
         height = ctx.get("height")
         goal   = ctx.get("weight_goal", "maintain health")
 
-        # Today
         sleep_h      = ctx.get("recent_sleep_hours")
         hydration_ml = ctx.get("recent_hydration_ml")
         calories     = ctx.get("recent_calories")
         protein_g    = ctx.get("recent_protein")
         meals        = ctx.get("meals_today", 0)
 
-        # Targets
         cal_target  = ctx.get("calorie_target",   2000)
         hyd_target  = ctx.get("hydration_target", 2500)
         sleep_target= ctx.get("sleep_target",      8.0)
 
-        # Trends
         avg_sleep  = ctx.get("avg_sleep_7days")
         avg_hyd    = ctx.get("avg_hydration_7days")
         avg_cal    = ctx.get("avg_calories_7days")
@@ -105,10 +98,6 @@ HARD RULES:
 
 Respond naturally as their trusted health companion."""
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Memory via MCP
-    # ──────────────────────────────────────────────────────────────────────
-
     async def _add_to_memory(self, role: str, content: str):
         mcp = await self._get_mcp()
         await mcp.store_message(self.user_id, role, content)
@@ -122,24 +111,17 @@ Respond naturally as their trusted health companion."""
         mcp = await self._get_mcp()
         await mcp.clear_history(self.user_id)
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Chat
-    # ──────────────────────────────────────────────────────────────────────
-
     async def chat(self, user_message: str, user_context: Dict[str, Any]) -> str:
         """Process a user message and return the AI response."""
         try:
-            # 1. Save user message to memory
             await self._add_to_memory("user", user_message)
 
-            # 2. Build message list: system + history + (history already includes current user msg)
             history = await self._get_history()
             messages = [
                 {"role": "system", "content": self.get_system_prompt(user_context)},
                 *history,
             ]
 
-            # 3. Call Groq
             resp = groq_client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -150,7 +132,6 @@ Respond naturally as their trusted health companion."""
             )
             assistant_msg = resp.choices[0].message.content
 
-            # 4. Save assistant reply to memory
             await self._add_to_memory("assistant", assistant_msg)
 
             return assistant_msg
@@ -171,14 +152,10 @@ Respond naturally as their trusted health companion."""
         }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Context builder (called by the route)
-# ─────────────────────────────────────────────────────────────────────────────
-
 async def get_user_context_from_db(
     firebase_uid: str,
-    users_collection=None,   # kept for signature compatibility
-    logs_collection=None,    # kept for signature compatibility
+    users_collection=None,
+    logs_collection=None,
 ) -> Dict[str, Any]:
     """Fetch full user context via MCP and flatten into a single dict."""
     try:
@@ -187,10 +164,8 @@ async def get_user_context_from_db(
 
         context: Dict[str, Any] = {}
 
-        # Profile fields
         context.update(data.get("profile", {}))
 
-        # Today's log → prefixed keys expected by the system prompt
         today = data.get("today", {})
         context.update({
             "recent_sleep_hours":  today.get("sleep_hours"),
@@ -200,7 +175,6 @@ async def get_user_context_from_db(
             "meals_today":         today.get("meals_count", 0),
         })
 
-        # Trends
         context.update(data.get("trends", {}))
 
         return context

@@ -1,7 +1,4 @@
-﻿"""
-Profile routes - POST /profile/create
-                  GET  /profile/{uid}
-"""
+﻿# Profile management routes: Create and retrieve user profiles.
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status

@@ -1,20 +1,4 @@
-"""
-Notification payload templates — 16 slots total.
-
-  Sleep (2):     wake, bedtime
-  Nutrition (6): breakfast, mid_morning, lunch, afternoon_break, dinner, post_dinner
-  Hydration (8): hydration_1 … hydration_8  (all use the 'hydration' type)
-
-All notifications use a unified 3-action system:
-  yes          → log the action immediately
-  need_15_min  → snooze 15 minutes, resend
-  need_30_min  → snooze 30 minutes, resend
-
-This acts as a quick-tap micro-logging system — every notification is
-actionable in one tap without opening the app.
-
-The FCM data dict sent to the device must contain only string values.
-"""
+# Notification templates and actions for the 16 slots.
 
 from dataclasses import dataclass
 from typing import Optional
@@ -61,13 +45,11 @@ class NotificationTemplate:
         }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 16-template registry
-# ─────────────────────────────────────────────────────────────────────────────
+# Registry
 
 TEMPLATES: dict[str, NotificationTemplate] = {
 
-    # ── Sleep (2) ─────────────────────────────────────────────────────────────
+    # Scheduler
     "wake": NotificationTemplate(
         notification_type="wake",
         title="Good morning! ☀️",
@@ -81,7 +63,7 @@ TEMPLATES: dict[str, NotificationTemplate] = {
         emoji="🌙",
     ),
 
-    # ── Nutrition (6) ─────────────────────────────────────────────────────────
+    # Required in production
     "breakfast": NotificationTemplate(
         notification_type="breakfast",
         title="Breakfast time 🍳",
@@ -119,7 +101,6 @@ TEMPLATES: dict[str, NotificationTemplate] = {
         emoji="🍵",
     ),
 
-    # ── Hydration (8 slots share this template; slot_label differentiates) ────
     "hydration": NotificationTemplate(
         notification_type="hydration",
         title="Hydration check 💧",
@@ -134,9 +115,7 @@ def get_template(notification_type: str) -> NotificationTemplate:
     return TEMPLATES.get(notification_type, TEMPLATES["hydration"])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Action mappings  (used by /quick-log route)
-# ─────────────────────────────────────────────────────────────────────────────
+# Action mappings
 
 # Human-readable label for each resolved action (stored in action_taken field)
 ACTION_LABEL_MAP: dict[str, str] = {

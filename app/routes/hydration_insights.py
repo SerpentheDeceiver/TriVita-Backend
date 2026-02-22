@@ -1,10 +1,4 @@
-"""
-Hydration AI Insights route — GET /hydration/ai-insights?uid=
-Generates personalised, LLM-powered hydration insights for the user:
-  • ai_advice        - 2–3 sentences of personalised hydration advice
-  • timing_analysis  - pattern analysis of WHEN they drink water
-  • peak_time        - rough time window when most water was consumed
-"""
+# Hydration AI Insights route: Patterns and advice for water intake.
 from __future__ import annotations
 
 import json

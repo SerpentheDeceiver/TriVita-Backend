@@ -1,15 +1,4 @@
-"""
-Notification routes
-  POST /notifications/register-token    — store FCM token for a user
-  GET  /notifications/preferences       — get user notification prefs
-  POST /notifications/preferences       — set user notification prefs
-  POST /notifications/ack               — mark slot resolved (no log written)
-  POST /notifications/quick-log         — log data from notification action
-  POST /notifications/send-test         — manually fire a test notification
-  GET  /notifications/status            — view today's notification states
-  POST /notifications/seed              — manually trigger seed_daily_states
-  POST /notifications/cycle             — manually trigger run_notification_cycle
-"""
+# Notification routes for management and operations.
 
 from __future__ import annotations
 
@@ -46,9 +35,7 @@ DB_NAME = settings.MONGO_DB_NAME
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Request / response models
-# ─────────────────────────────────────────────────────────────────────────────
+# Models
 
 class RegisterTokenRequest(BaseModel):
     uid: str
@@ -58,6 +45,13 @@ class RegisterTokenRequest(BaseModel):
 class NotificationPrefsRequest(BaseModel):
     uid: str
     timezone: str = "Asia/Kolkata"
+    
+    # Master Toggles
+    global_enabled:      bool = True
+    sleep_enabled:       bool = True
+    hydration_enabled:   bool = True
+    nutrition_enabled:   bool = True
+
     # Sleep (2)
     wake_time:            str = "07:00"
     bedtime_time:         str = "22:30"
@@ -68,7 +62,7 @@ class NotificationPrefsRequest(BaseModel):
     afternoon_break_time: str = "16:00"
     dinner_time:          str = "19:30"
     post_dinner_time:     str = "21:00"
-    # Hydration (8) — 250 ml each, equally spread by default
+    # Hydration (8)
     hydration_1_time:     str = "08:45"
     hydration_2_time:     str = "10:30"
     hydration_3_time:     str = "12:15"
@@ -99,9 +93,7 @@ class SendTestRequest(BaseModel):
     notification_type: str = "hydration"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper
-# ─────────────────────────────────────────────────────────────────────────────
+# Helpers
 
 def _today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -123,9 +115,7 @@ async def _get_user(uid: str) -> dict:
     return user
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints
 
 @router.post("/register-token", summary="Register or refresh FCM device token")
 async def register_token(body: RegisterTokenRequest):
@@ -149,6 +139,10 @@ async def get_preferences(uid: str = Query(...)):
     user = await _get_user(uid)
     default_prefs = {
         "timezone":            "Asia/Kolkata",
+        "global_enabled":      True,
+        "sleep_enabled":       True,
+        "hydration_enabled":   True,
+        "nutrition_enabled":   True,
         "wake_time":            "07:00",
         "bedtime_time":         "22:30",
         "breakfast_time":       "08:00",
@@ -240,12 +234,8 @@ async def quick_log(body: QuickLogRequest):
       dinner / post_dinner  → nutrition entry for that meal type
     """
     logger.info(
-        "[QUICK-LOG] ▶ uid=%s  type=%s  slot=%s  action=%s  date=%s",
-        body.uid, body.notification_type, body.slot_label, body.action, body.date,
-    )
-    print(
-        f"[QUICK-LOG] ▶ uid={body.uid}  type={body.notification_type}  "
-        f"slot={body.slot_label}  action={body.action}  date={body.date}"
+        "[QUICK-LOG] uid=%s type=%s slot=%s action=%s",
+        body.uid, body.notification_type, body.slot_label, body.action
     )
 
     date   = body.date or _today()

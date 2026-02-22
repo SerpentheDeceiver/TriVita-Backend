@@ -1,8 +1,5 @@
-"""
-MongoDB async connection using Motor driver.
-Single client instance for connection pooling.
-URI is always taken from the MONGO_URI environment variable — no localhost fallback.
-"""
+# MongoDB async connection using Motor driver.
+# URI is taken from the MONGO_URI environment variable.
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from app.core.config import settings

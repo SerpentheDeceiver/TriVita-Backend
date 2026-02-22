@@ -1,23 +1,9 @@
-"""
-MongoDB helper for the notification_states collection.
-
-Document shape:
-{
-    firebase_uid:       str,          # user partition key
-    date:               str,          # "YYYY-MM-DD"
-    notification_type:  str,          # wake|breakfast|lunch|dinner|hydration|bedtime|custom
-    slot_label:         str,          # human-readable slot id (e.g. "hydration_1", "breakfast")
-    scheduled_utc:      datetime,
-    sent_at:            datetime | None,
-    reminded_15_at:     datetime | None,
-    reminded_30_at:     datetime | None,
-    resolved_at:        datetime | None,
-    status:             str,          # pending|sent|reminded_15|reminded_30|resolved|expired
-    action_taken:       str | None,   # ml_250|ml_500|ml_750|logged|skipped|snooze_15|snooze_30|i_am_awake|…
-}
-
-Compound unique index: (firebase_uid, date, slot_label)
-"""
+# Helper for notification state documents.
+# Document shape:
+# {
+#     firebase_uid: str, date: str, notification_type: str, slot_label: str,
+#     scheduled_utc: datetime, status: str, action_taken: str | None, etc.
+# }
 
 from datetime import datetime, timezone
 from typing import Optional
@@ -29,9 +15,7 @@ import os
 
 DB_NAME: str = os.getenv("MONGO_DB_NAME", "health_ai")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Collection accessor
-# ─────────────────────────────────────────────────────────────────────────────
 
 async def get_notification_states_collection() -> AsyncIOMotorCollection:
     client = get_client()
@@ -44,9 +28,7 @@ async def get_notification_states_collection() -> AsyncIOMotorCollection:
     return collection
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CRUD helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 async def upsert_state(
     firebase_uid: str,

@@ -1,12 +1,4 @@
-"""
-Predictive Analysis route  —  GET /predictive/analysis?uid=
-Runs 4 ML models on the user's real MongoDB daily-log history:
-
-  A. Sleep Risk Classification    (Logistic Regression)
-  B. Sleep Pattern Clustering     (K-Means, scatter: bed-time × hours)
-  C. Hydration Behaviour Clustering (K-Means, bar distribution)
-  D. Weight-Change Projection     (Linear calorie-deficit model)
-"""
+# Predictive Analysis route: Machine learning models for health trends.
 from __future__ import annotations
 
 import math
@@ -25,16 +17,12 @@ from app.mcp import get_mcp_client
 
 router = APIRouter(prefix="/predictive", tags=["Predictive Analysis"])
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Constants
-# ─────────────────────────────────────────────────────────────────────────────
 SLEEP_TARGET_H  = 8.0
 CALORIE_PER_KG  = 7700.0    # kcal needed to change body weight by 1 kg
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_to_frac_hour(t: Optional[str]) -> Optional[float]:
     """'10:30 PM' | '22:30' | None  →  fractional 24-hr hour (22.5)."""
@@ -69,9 +57,7 @@ def _safe_std(vals: List[float]) -> float:
     return statistics.stdev(vals) if len(vals) >= 2 else 0.0
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# A.  Sleep Risk Classification  (Logistic Regression)
-# ─────────────────────────────────────────────────────────────────────────────
+# A. Sleep Risk Classification (Logistic Regression)
 
 def _sleep_risk_model(
     sleep_hours: List[float],
@@ -143,9 +129,7 @@ def _sleep_risk_model(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# B.  Sleep Pattern Clustering  (K-Means)
-# ─────────────────────────────────────────────────────────────────────────────
+# B. Sleep Pattern Clustering (K-Means)
 
 _SLEEP_CLUSTER_NAMES = {
     0: "Consistent Sleeper",
@@ -225,9 +209,7 @@ def _sleep_cluster_model(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# C.  Hydration Behaviour Clustering  (K-Means)
-# ─────────────────────────────────────────────────────────────────────────────
+# C. Hydration Behaviour Clustering (K-Means)
 
 def _hydration_cluster_model(
     logs: List[Dict[str, Any]],
@@ -317,9 +299,7 @@ def _hydration_cluster_model(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# D.  Weight-Change Projection  (Calorie Deficit Regression)
-# ─────────────────────────────────────────────────────────────────────────────
+# D. Weight-Change Projection (Calorie Deficit Regression)
 
 def _weight_projection_model(
     logs: List[Dict[str, Any]],
@@ -382,9 +362,7 @@ def _weight_projection_model(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Main endpoint
-# ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/analysis")
 async def get_predictive_analysis(uid: str = Query(...)):

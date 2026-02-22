@@ -1,18 +1,8 @@
-"""
-Log and Context Agent
-Processes separate daily logs (sleep, hydration, nutrition) and prepares data for specialized agents.
-"""
-
+# Context agent to process raw logs.
 
 def log_context_agent(state: dict):
     """
     Processes separate daily logs and routes information to specialized health agents.
-    
-    Expected input format:
-    - profile: {user_id, name, age, weight, height, gender, weight_goal, target_weight_change_kg}
-    - sleep_log: {date, sleep_hours, bed_time, wake_time, quality, etc.}
-    - hydration_log: {date, water_intake_ml, water_logs, etc.}
-    - nutrition_log: {date, meals, total_calories, total_protein_g, etc.}
     """
     
     # Extract profile data
@@ -23,7 +13,7 @@ def log_context_agent(state: dict):
     state["weight"] = profile.get("weight", 70)
     state["height"] = profile.get("height", 170)
     state["gender"] = profile.get("gender", "male")
-    state["weight_goal"] = profile.get("weight_goal", "maintain")  # reduce/increase/maintain
+    state["weight_goal"] = profile.get("weight_goal", "maintain")
     state["target_weight_change_kg"] = profile.get("target_weight_change_kg", 0)
     state["target_timeline_weeks"] = profile.get("target_timeline_weeks", 12)
     state["activity_level"] = profile.get("activity_level", "moderate")

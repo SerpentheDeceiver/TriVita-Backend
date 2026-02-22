@@ -29,12 +29,7 @@ DEFAULT_CALORIE_DELTA: dict[str, int] = {
     "maintain":    0,
 }
 
-# ── Protein multipliers (g per kg body weight) ────────────────────────────────
-PROTEIN_MULTIPLIERS: dict[str, float] = {
-    "reduce":   2.2,   # higher protein preserves muscle during cut
-    "increase": 2.0,   # higher protein supports muscle gain
-    "maintain": 1.6,
-}
+# Protein multipliers
 
 # ── Safety floor calories ─────────────────────────────────────────────────────
 MIN_CALORIES: dict[str, int] = {

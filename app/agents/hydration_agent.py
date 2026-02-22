@@ -1,10 +1,5 @@
 def hydration_agent(state: dict):
-    """
-    Analyzes hydration based on automatically calculated water needs.
-    Water target is calculated based on age, weight, height, and activity level.
-    
-    Formula: Base water need = 30-35ml per kg of body weight, adjusted for age
-    """
+    # Hydration analysis agent.
     # Get actual water intake from logs
     actual_intake = state.get("actual_water_intake", 0)
     age = state.get("age", 25)

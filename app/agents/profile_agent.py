@@ -2,16 +2,7 @@ from app.services.formulas import calculate_bmr, water_target_ml, protein_target
 
 
 def profile_agent(state: dict):
-    """
-    Profile agent calculates personalized health targets based on user profile and goals.
-    
-    Inputs:
-    - weight, height, age, gender: Basic profile info
-    - weight_goal: "maintain", "reduce", or "increase"
-    - target_weight_change_kg: How much weight to change (kg)
-    - target_timeline_weeks: Timeline to achieve weight goal
-    - activity_level: Activity multiplier for calorie calculation
-    """
+    # Profile analysis agent.
     weight = state["weight"]
     height = state["height"]
     age = state["age"]

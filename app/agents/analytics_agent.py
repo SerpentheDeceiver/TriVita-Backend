@@ -1,6 +1,5 @@
 """
-Analytics Agent – loads 7-day data from tests/weekly_logs/dayN/daily_log.json,
-performs real statistical analysis and ML-based wellness prediction.
+Analytics agent for overall health data summary.
 """
 import json
 import os

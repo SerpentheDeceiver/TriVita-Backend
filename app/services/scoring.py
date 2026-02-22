@@ -1,15 +1,10 @@
-"""
-Scoring helper for daily health logs.
-Called after each section update to recompute and persist scores.
-"""
+# Health score computation for daily logs.
 from __future__ import annotations
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Individual scorers  (each returns 0–100)
-# ─────────────────────────────────────────────────────────────────────────────
+# Individual scorers
 
 def score_sleep(sleep: dict | None, target_hours: float = 8.0) -> int:
     """
@@ -22,16 +17,12 @@ def score_sleep(sleep: dict | None, target_hours: float = 8.0) -> int:
     if hours <= 0:
         return 0
     ratio = hours / max(target_hours, 1.0)
-    # 90%+ → 100; 70-90% → 70-100; below 50% → 0-50 (linear)
     score = min(ratio, 1.0) * 100
     return int(round(min(score, 100)))
 
 
 def score_hydration(hydration: dict | None, target_ml: int = 2500) -> int:
-    """
-    Score based on total_ml consumed vs target.
-    Linear 0–100; capped at 100.
-    """
+    """Score based on total_ml consumed vs target. Linear 0–100; capped at 100."""
     if not hydration:
         return 0
     total = hydration.get("total_ml") or 0
@@ -42,8 +33,7 @@ def score_hydration(hydration: dict | None, target_ml: int = 2500) -> int:
 
 
 def score_nutrition(nutrition: dict | None, target_cal: int = 2000) -> int:
-    """
-    Score based on calories eaten vs target — within ±10% = 100,
+    """Score based on calories eaten vs target — within ±10% = 100,
     linearly decreasing outside that band.
     Protein bonus: if protein within 80%+ of target → tiny bonus capped at 100.
     """
@@ -54,13 +44,11 @@ def score_nutrition(nutrition: dict | None, target_cal: int = 2000) -> int:
     if cal <= 0:
         return 0
     ratio = cal / max(target_cal, 1)
-    # Band: 0.9–1.1 → 100
     if 0.9 <= ratio <= 1.1:
         score = 100.0
     elif ratio < 0.9:
         score = (ratio / 0.9) * 100
     else:
-        # Over-eating: score drops after 120%
         over = min((ratio - 1.1) / 0.2, 1.0)
         score = 100 - over * 30
     return int(round(max(0, min(score, 100))))
@@ -74,9 +62,7 @@ def compute_wellness(sleep_s: int, hydration_s: int, nutrition_s: int) -> int:
     return int(round(total / 3))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Main recompute + persist helper
-# ─────────────────────────────────────────────────────────────────────────────
+# Main recompute helper
 
 async def recompute_scores(
     db: AsyncIOMotorCollection,

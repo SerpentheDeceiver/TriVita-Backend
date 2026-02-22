@@ -1,8 +1,4 @@
-"""
-MCP Client for Health Assistant Chatbot
-In-process implementation — direct MongoDB access + in-RAM conversation store.
-Schema aligned with the actual health_ai MongoDB collections.
-"""
+# MCP Client for Health Assistant Chatbot with direct MongoDB access.
 import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
@@ -20,9 +16,7 @@ class MCPHealthClient:
         self._db_client: Optional[AsyncIOMotorClient] = None
         self._db = None
 
-    # ──────────────────────────────────────────────────────────────────────
     # Connection
-    # ──────────────────────────────────────────────────────────────────────
 
     async def connect(self):
         """Initialize MongoDB connection using validated settings (no localhost fallback)."""
@@ -35,9 +29,7 @@ class MCPHealthClient:
         if self._db_client is None:
             await self.connect()
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Tool 1 & 2: Conversation memory (in-RAM)
-    # ──────────────────────────────────────────────────────────────────────
+    # Conversation memory
 
     async def get_conversation_history(
         self, user_id: str, limit: int = 20
@@ -67,12 +59,7 @@ class MCPHealthClient:
         async with self._lock:
             self._conversation_store[user_id] = []
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Tool 3: User profile
-    # DB schema: users { name, age, weight_kg, height_cm, gender, goal,
-    #   activity_level, targets: { calorie_target, water_target_ml,
-    #   sleep_target_hours, protein_target_g } }
-    # ──────────────────────────────────────────────────────────────────────
+    # User profile
 
     async def get_user_profile(self, firebase_uid: str) -> Dict[str, Any]:
         """MCP Tool: get-user-profile"""
@@ -101,12 +88,7 @@ class MCPHealthClient:
             print(f"[MCP] get_user_profile error: {e}")
             return {}
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Tool 4: Today's health log
-    # DB schema: daily_logs { date, sleep: { hours, bed_time, wake_time },
-    #   hydration: { total_ml, entries[] },
-    #   nutrition: { totals: { calories, protein, carbs, fat }, entries[] } }
-    # ──────────────────────────────────────────────────────────────────────
+    # Today's health log
 
     async def get_today_health_log(self, firebase_uid: str) -> Dict[str, Any]:
         """MCP Tool: get-today-health-log"""
@@ -137,9 +119,7 @@ class MCPHealthClient:
             print(f"[MCP] get_today_health_log error: {e}")
             return {}
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Tool 5: 7-day health trends
-    # ──────────────────────────────────────────────────────────────────────
+    # 7-day health trends
 
     async def get_health_trends(
         self, firebase_uid: str, days: int = 7
@@ -179,9 +159,7 @@ class MCPHealthClient:
             print(f"[MCP] get_health_trends error: {e}")
             return {}
 
-    # ──────────────────────────────────────────────────────────────────────
-    # Tool 6: Full context composite (profile + today + trends)
-    # ──────────────────────────────────────────────────────────────────────
+    # Full context composite
 
     async def get_full_user_context(self, firebase_uid: str) -> Dict[str, Any]:
         """MCP Tool: get-full-user-context"""
@@ -190,9 +168,7 @@ class MCPHealthClient:
         trends  = await self.get_health_trends(firebase_uid)
         return {"profile": profile, "today": today, "trends": trends}
 
-    # ──────────────────────────────────────────────────────────────────────
     # Lifecycle
-    # ──────────────────────────────────────────────────────────────────────
 
     async def close(self):
         if self._db_client:
@@ -201,9 +177,7 @@ class MCPHealthClient:
             self._db = None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Singleton accessor
-# ─────────────────────────────────────────────────────────────────────────────
 
 _mcp_client: Optional[MCPHealthClient] = None
 

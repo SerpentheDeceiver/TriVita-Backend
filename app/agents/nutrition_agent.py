@@ -1,7 +1,4 @@
-"""
-AI-Powered Nutrition Agent using Groq LLM
-Generates personalized meal plans with budget-aware suggestions and macro balance reasoning.
-"""
+# Nutrition assistant agent for meal plan generation.
 
 import os
 import json
@@ -181,12 +178,6 @@ Respond ONLY with valid JSON in this exact structure:
 def nutrition_agent(state: dict):
     """
     AI-powered nutrition agent that generates personalized meal plans.
-    
-    Features:
-    - Generates meal plans based on health targets
-    - Adjusts diet based on current behavior and deficits
-    - Budget-aware suggestions
-    - Macro balance reasoning (protein, carbs, fats)
     """
     
     # Extract relevant data from state
@@ -199,7 +190,7 @@ def nutrition_agent(state: dict):
     gender = state.get("gender", "male")
     
     # Weight goals
-    weight_goal = state.get("weight_goal", "maintain")  # reduce/increase/maintain
+    weight_goal = state.get("weight_goal", "maintain")
     target_weight_change = state.get("target_weight_change_kg", 0)
     target_timeline = state.get("target_timeline_weeks", 12)
     
@@ -214,7 +205,7 @@ def nutrition_agent(state: dict):
     hydration_score = state.get("hydration_score", 50)
     
     # Budget constraint (can be passed from user profile)
-    budget_per_meal = state.get("budget_per_meal", 10)  # USD
+    budget_per_meal = state.get("budget_per_meal", 10)
     
     # Build prompt for Groq LLM
     prompt = f"""You are an expert nutrition AI assistant. Generate a personalized meal plan based on the following user data:
@@ -223,7 +214,7 @@ def nutrition_agent(state: dict):
 - Age: {age} years
 - Current Weight: {weight} kg
 - Gender: {gender}
-- Weight Goal: {weight_goal.upper()} ({target_weight_change}kg over {target_timeline} weeks)
+- Weight Goal: {weight_goal.upper()}
 - Daily calorie target: {calorie_target} kcal
 - Daily protein target: {protein_target}g
 

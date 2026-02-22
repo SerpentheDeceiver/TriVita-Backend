@@ -69,42 +69,31 @@ async def get_sleep_ai_insights(uid: str = Query(..., description="Firebase UID"
         )
 
         # Context variables
-        name          = profile.get("name") or "User"
-        sleep_target  = profile.get("sleep_target") or 8.0
-        sleep_hours   = today_log.get("sleep_hours") or 0.0
-        bed_time      = today_log.get("sleep_bed_time") or "not recorded"
-        wake_time     = today_log.get("sleep_wake_time") or "not recorded"
-        avg_7day      = trends.get("avg_sleep_7days")
-        days_logged   = trends.get("days_logged", 0)
+        name         = profile.get("name") or "User"
+        sleep_target = profile.get("sleep_target") or 8.0
+        today_sleep  = today_log.get("sleep_hours") or 0.0
+        avg_7d       = trends.get("avg_sleep_7days") or 0.0
 
-        deficit = round(sleep_target - sleep_hours, 1)
-        deficit_str = (
-            f"{deficit}h deficit"  if deficit > 0
-            else f"{abs(deficit)}h surplus"  if deficit < 0
-            else "exactly on target"
-        )
-
-        # Build Groq prompt
         user_prompt = (
-            f"Name: {name}\n"
-            f"Sleep target: {sleep_target}h/night\n"
-            f"Last night: {sleep_hours}h  (bed: {bed_time}, wake: {wake_time})  [{deficit_str}]\n"
-            f"7-day average: {avg_7day}h  over {days_logged} logged day(s)\n"
-            f"Recent sleep log (chronological):\n{history_str}\n\n"
+            f"User Profile:\n"
+            f"  - Name: {name}\n"
+            f"  - Sleep Target: {sleep_target} hours\n\n"
+            f"Sleep Log for Today:\n"
+            f"  - Hours: {today_sleep} hours\n\n"
+            f"Sleep History (last 7 logs):\n{history_str}\n\n"
+            f"7-Day Trend:\n"
+            f"  - Average sleep: {avg_7d} hours\n\n"
             "Generate personalised sleep insights."
         )
 
         system_prompt = (
-            "You are a personal health AI with deep sleep science expertise. "
-            "Be empathetic, specific, and science-backed. "
+            "You are a personal health AI specialising in sleep science and circadian rhythms. "
+            "Be empathetic, specific, and actionable. "
             "Return ONLY a valid JSON object with exactly these four keys:\n"
-            "  \"ai_advice\"      : 2–3 sentence personalised advice for tonight.\n"
-            "  \"root_cause\"     : 1–2 sentence analysis of WHY their sleep quality "
-            "is what it is (irregular schedule, late bedtime, short duration, etc.).\n"
-            "  \"trend_analysis\" : 2–3 sentences about the 7-day trend "
-            "(improving / declining / consistent, notable patterns).\n"
-            "  \"tips\"           : JSON array of exactly 5 specific, "
-            "actionable sleep improvement tips (strings).\n"
+            "  \"ai_advice\"      : 2–3 sentences of personalised sleep advice for tonight or tomorrow.\n"
+            "  \"root_cause\"     : 2 sentences explaining why their sleep (or lack thereof) might be happening based on their schedule.\n"
+            "  \"trend_analysis\" : 2 sentences summarising the 7-day pattern (e.g. consistency, sleep debt).\n"
+            "  \"tips\"           : A list of 5 short, actionable tips to improve sleep quality.\n"
             "Do NOT wrap in markdown code blocks."
         )
 

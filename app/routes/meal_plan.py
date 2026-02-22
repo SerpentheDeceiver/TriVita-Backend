@@ -1,11 +1,4 @@
-"""
-Meal Plan routes — CRUD for the meal_plans collection + AI generation.
-
-GET  /meal-plan/saved?uid=&date=          – fetch saved plan for a date
-POST /meal-plan/generate                  – AI-generate full-day plan (no save)
-POST /meal-plan/save                      – upsert a plan into DB
-GET  /meal-plan                           – legacy AI-only endpoint (kept for backward compat)
-"""
+# Meal Plan routes: Generation and persistence.
 
 from datetime import date as dt_date, datetime, timezone
 
@@ -49,9 +42,7 @@ def _build_profile_state(profile: dict, log: dict) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GET /meal-plan/saved
-# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints
 
 @router.get("/meal-plan/saved", summary="Get saved meal plan for a date")
 async def get_saved_meal_plan(
@@ -68,9 +59,6 @@ async def get_saved_meal_plan(
     return {"exists": True, **plan}
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# POST /meal-plan/generate
-# ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/meal-plan/generate", summary="AI-generate a full-day meal plan")
 async def generate_meal_plan(
@@ -112,9 +100,6 @@ async def generate_meal_plan(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# POST /meal-plan/save
-# ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/meal-plan/save", summary="Save (upsert) a meal plan for a date")
 async def save_meal_plan(
@@ -167,9 +152,6 @@ async def save_meal_plan(
         return {"status": "created", **doc}
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GET /meal-plan  (legacy)
-# ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/meal-plan", summary="[Legacy] AI meal suggestions for today")
 async def get_meal_plan(

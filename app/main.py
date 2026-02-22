@@ -19,39 +19,33 @@ from app.scheduler import create_scheduler, seed_daily_states
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Application lifespan  (startup / shutdown)
-# ─────────────────────────────────────────────────────────────────────────────
-
+# Startup and shutdown logic
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Startup ──────────────────────────────────────────────────────────────
-    logger.info("Starting notification scheduler…")
+    logger.info("Starting notification scheduler...")
     _scheduler = create_scheduler()
     _scheduler.start()
 
-    # Seed today's notification states for all users with FCM tokens
+    # Seed notification states for today
     try:
         seeded = await seed_daily_states()
-        logger.info("Startup seed: %d notification slots created for today.", seeded)
+        logger.info("Startup seed: %d slots created.", seeded)
     except Exception as exc:
-        logger.warning("Startup seed failed (non-fatal): %s", exc)
+        logger.warning("Startup seed failed: %s", exc)
 
-    yield   # application runs here
+    yield
 
-    # ── Shutdown ─────────────────────────────────────────────────────────────
-    logger.info("Shutting down notification scheduler…")
+    logger.info("Shutting down scheduler...")
     _scheduler.shutdown(wait=False)
 
-
 app = FastAPI(
-    title="Health AI Multi-Agent System",
-    description="AI-powered health analysis with multi-agent system",
+    title="Health AI Backend",
+    description="Backend for TriVita Health App",
     version="2.0.0",
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -60,7 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routers
+# Routes
 app.include_router(profile_router, prefix="/profile")
 app.include_router(daily_logs_router, prefix="/log")
 app.include_router(meal_plan_router)
@@ -73,60 +67,16 @@ app.include_router(notifications_router, prefix="/notifications")
 
 graph = build_graph()
 
-
 @app.get("/")
 def root():
-    """API information."""
-    return {
-        "app": "Health AI Multi-Agent System",
-        "version": "2.0.0",
-        "status": "active",
-        "endpoints": {
-            "/analyze": "POST - Analyze health data with multi-agent system"
-        }
-    }
-
+    return {"app": "TriVita Health AI", "status": "active"}
 
 @app.get("/health")
 def health_check():
-    """Lightweight ping used by the Flutter app to auto-detect the backend URL."""
     return {"status": "ok"}
-
 
 @app.post("/analyze")
 def analyze(data: dict):
-    """
-    Analyze health data using the multi-agent system.
-    
-    Expected input format:
-    {
-        "profile": {
-            "age": 28,
-            "weight": 72,
-            "height": 175,
-            "gender": "male",
-            "weight_goal": "maintain",
-            "activity_level": "moderate"
-        },
-        "sleep_log": {
-            "sleep_hours": 7.5,
-            "bed_time": "23:00",
-            "wake_time": "06:30",
-            "sleep_quality": "good"
-        },
-        "hydration_log": {
-            "water_intake_ml": 2200,
-            "caffeine_intake_mg": 150,
-            "urine_color": "light_yellow"
-        },
-        "nutrition_log": {
-            "total_calories": 2050,
-            "total_protein_g": 140,
-            "total_carbs_g": 210,
-            "total_fat_g": 65,
-            "meal_count": 4
-        }
-    }
-    """
+    # Analyze data using the graph
     result = graph.invoke(data)
     return result

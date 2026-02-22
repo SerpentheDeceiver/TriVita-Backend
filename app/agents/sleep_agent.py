@@ -1,16 +1,5 @@
 def sleep_agent(state: dict):
-    """
-    Sleep agent analyzes sleep patterns, quality, and provides actionable insights.
-    
-    Inputs:
-    - sleep_hours: Total hours of sleep
-    - bed_time: Time user went to bed (HH:MM format)
-    - wake_time: Time user woke up (HH:MM format)
-    - sleep_quality: poor, fair, good, excellent
-    - interruptions: Number of sleep interruptions
-    - dream_recall: Boolean indicating if user recalls dreams
-    - feeling_on_wake: refreshed, neutral, groggy, exhausted
-    """
+    # Sleep analysis agent.
     sleep_hours = state.get("sleep_hours", 0)
     sleep_quality = state.get("sleep_quality", "good")
     interruptions = state.get("sleep_interruptions", 0)

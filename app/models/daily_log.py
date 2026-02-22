@@ -1,7 +1,4 @@
-"""
-Pydantic models for daily health log endpoints.
-Covers sleep, hydration, and nutrition log requests/responses.
-"""
+# Pydantic models for daily health logs (sleep, hydration, nutrition).
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,7 +7,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-# ── Enums ────────────────────────────────────────────────────────────────────
+# Enums
 
 class SleepEntryMode(str, Enum):
     time         = "time"          # bed_time + wake_time provided
@@ -24,7 +21,7 @@ class SleepSource(str, Enum):
     profile      = "profile"
 
 
-# ── Sleep ────────────────────────────────────────────────────────────────────
+# Sleep
 
 class SleepLogRequest(BaseModel):
     """
@@ -42,7 +39,7 @@ class SleepLogRequest(BaseModel):
     hours      : Optional[float] = Field(None, ge=0.5, le=24)
 
 
-# ── Hydration ────────────────────────────────────────────────────────────────
+# Hydration
 
 class HydrationLogRequest(BaseModel):
     amount_ml      : int           = Field(..., gt=0, le=5000, description="ml of water consumed")
@@ -50,7 +47,7 @@ class HydrationLogRequest(BaseModel):
     logged_time    : Optional[str] = Field(None, description="HH:MM 24-hr — device local time when user tapped log")
 
 
-# ── Nutrition ────────────────────────────────────────────────────────────────
+# Nutrition
 
 class FoodItem(BaseModel):
     name    : str
@@ -67,7 +64,7 @@ class NutritionLogRequest(BaseModel):
     items          : list[FoodItem] = Field(..., min_length=1)
 
 
-# ── Daily log fetch response shape ──────────────────────────────────────────
+# Daily log response
 
 class DailyLogResponse(BaseModel):
     firebase_uid : str

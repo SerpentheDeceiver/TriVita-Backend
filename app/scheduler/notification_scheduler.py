@@ -1,18 +1,5 @@
-"""
-Notification Scheduler Engine.
-
-Responsibilities:
-  1. seed_daily_states()  — run at midnight (or manually) to insert
-     `pending` notification_state docs for every user's schedule today.
-  2. run_notification_cycle()  — run every 5 min to:
-       • send FCM for due slots (pending → sent)
-       • send 15-min reminder (sent → reminded_15)
-       • send 30-min reminder (reminded_15 → reminded_30)
-       • expire after 45 min with no response (reminded_30 → expired)
-
-APScheduler 3.x  (AsyncIOScheduler)  is used so jobs run in the same
-asyncio event loop as FastAPI, avoiding thread-safety issues with Motor.
-"""
+# Notification Scheduler Engine.
+# Processes daily notification seeding and 5-minute send/reminder cycles.
 
 import asyncio
 import logging
@@ -38,17 +25,14 @@ logger = logging.getLogger(__name__)
 DB_NAME = settings.MONGO_DB_NAME
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Default notification prefs — 16 fixed slots, always enabled.
-#
-#   Sleep (2):     wake, bedtime
-#   Nutrition (6): breakfast, mid_morning, lunch, afternoon_break,
-#                  dinner, post_dinner
-#   Hydration (8): hydration_1 … hydration_8 (250 ml each = 2 L/day)
-# ─────────────────────────────────────────────────────────────────────────────
+# Default notification preferences
 
 DEFAULT_PREFS = {
     "timezone": "Asia/Kolkata",
+    "global_enabled":      True,
+    "sleep_enabled":       True,
+    "hydration_enabled":   True,
+    "nutrition_enabled":   True,
     # Sleep
     "wake_time":            "07:00",
     "bedtime_time":         "22:30",
@@ -71,9 +55,7 @@ DEFAULT_PREFS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_local_time(time_str: str, date_str: str, tz_name: str) -> datetime:
     """
@@ -112,66 +94,73 @@ def _build_schedule(user_doc: dict, date_str: str, skip_past: bool = True) -> li
     Returns list of {slot_label, notification_type, scheduled_utc}.
     """
     prefs = {**DEFAULT_PREFS, **(user_doc.get("notification_prefs") or {})}
+    
+    # Global Killswitch
+    if not prefs.get("global_enabled", True):
+        logger.info("Global notifications disabled for uid=%s", user_doc.get("firebase_uid"))
+        return []
+
     tz_name = prefs.get("timezone", "Asia/Kolkata")
     now_utc = datetime.now(timezone.utc)
 
     slots = []
 
     # ── Sleep (2) ─────────────────────────────────────────────────────────
-    sleep_map = [
-        ("wake",    "wake_time"),
-        ("bedtime", "bedtime_time"),
-    ]
-    for notif_type, key in sleep_map:
-        t = prefs.get(key)
-        if t:
-            utc = _parse_local_time(t, date_str, tz_name)
-            if not skip_past or utc >= now_utc:
-                slots.append({
-                    "slot_label":        notif_type,
-                    "notification_type": notif_type,
-                    "scheduled_utc":     utc,
-                })
+    if prefs.get("sleep_enabled", True):
+        sleep_map = [
+            ("wake",    "wake_time"),
+            ("bedtime", "bedtime_time"),
+        ]
+        for notif_type, key in sleep_map:
+            t = prefs.get(key)
+            if t:
+                utc = _parse_local_time(t, date_str, tz_name)
+                if not skip_past or utc >= now_utc:
+                    slots.append({
+                        "slot_label":        notif_type,
+                        "notification_type": notif_type,
+                        "scheduled_utc":     utc,
+                    })
 
     # ── Nutrition (6) ─────────────────────────────────────────────────────
-    nutrition_map = [
-        ("breakfast",       "breakfast_time"),
-        ("mid_morning",     "mid_morning_time"),
-        ("lunch",           "lunch_time"),
-        ("afternoon_break", "afternoon_break_time"),
-        ("dinner",          "dinner_time"),
-        ("post_dinner",     "post_dinner_time"),
-    ]
-    for notif_type, key in nutrition_map:
-        t = prefs.get(key)
-        if t:
-            utc = _parse_local_time(t, date_str, tz_name)
-            if not skip_past or utc >= now_utc:
-                slots.append({
-                    "slot_label":        notif_type,
-                    "notification_type": notif_type,
-                    "scheduled_utc":     utc,
-                })
+    if prefs.get("nutrition_enabled", True):
+        nutrition_map = [
+            ("breakfast",       "breakfast_time"),
+            ("mid_morning",     "mid_morning_time"),
+            ("lunch",           "lunch_time"),
+            ("afternoon_break", "afternoon_break_time"),
+            ("dinner",          "dinner_time"),
+            ("post_dinner",     "post_dinner_time"),
+        ]
+        for notif_type, key in nutrition_map:
+            t = prefs.get(key)
+            if t:
+                utc = _parse_local_time(t, date_str, tz_name)
+                if not skip_past or utc >= now_utc:
+                    slots.append({
+                        "slot_label":        notif_type,
+                        "notification_type": notif_type,
+                        "scheduled_utc":     utc,
+                    })
 
     # ── Hydration (8) ─────────────────────────────────────────────────────
-    for idx in range(1, 9):
-        key = f"hydration_{idx}_time"
-        t = prefs.get(key)
-        if t:
-            utc = _parse_local_time(t, date_str, tz_name)
-            if not skip_past or utc >= now_utc:
-                slots.append({
-                    "slot_label":        f"hydration_{idx}",
-                    "notification_type": "hydration",
-                    "scheduled_utc":     utc,
-                })
+    if prefs.get("hydration_enabled", True):
+        for idx in range(1, 9):
+            key = f"hydration_{idx}_time"
+            t = prefs.get(key)
+            if t:
+                utc = _parse_local_time(t, date_str, tz_name)
+                if not skip_past or utc >= now_utc:
+                    slots.append({
+                        "slot_label":        f"hydration_{idx}",
+                        "notification_type": "hydration",
+                        "scheduled_utc":     utc,
+                    })
 
     return slots
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Core async jobs
-# ─────────────────────────────────────────────────────────────────────────────
+# Core Scheduler Jobs
 
 async def seed_daily_states(date_str: Optional[str] = None) -> int:
     """
@@ -357,9 +346,7 @@ async def run_notification_cycle() -> dict:
     return stats
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# APScheduler factory
-# ─────────────────────────────────────────────────────────────────────────────
+# Scheduler Factory
 
 def create_scheduler() -> AsyncIOScheduler:
     """

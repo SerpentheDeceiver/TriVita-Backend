@@ -1,11 +1,4 @@
-"""
-AI Health Assistant Chatbot Routes
-POST /chatbot/chat
-GET  /chatbot/greeting/{firebase_uid}
-GET  /chatbot/history/{firebase_uid}
-DELETE /chatbot/history/{firebase_uid}
-POST /chatbot/quick-ask/{firebase_uid}
-"""
+# AI Health Assistant Chatbot Routes
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -22,9 +15,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 router = APIRouter(prefix="/chatbot", tags=["AI Assistant"])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Schemas
-# ─────────────────────────────────────────────────────────────────────────────
 
 class ChatMessage(BaseModel):
     message: str
@@ -46,9 +37,7 @@ class ConversationStats(BaseModel):
     last_message: Optional[str]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_assistant(

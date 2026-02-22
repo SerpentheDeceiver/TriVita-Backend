@@ -1,6 +1,4 @@
-"""
-Pydantic models for user profile creation and storage.
-"""
+# Pydantic models for user profile creation and storage.
 from __future__ import annotations
 
 from datetime import datetime

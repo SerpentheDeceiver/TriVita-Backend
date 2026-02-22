@@ -1,12 +1,4 @@
-"""
-Analytics route – reads from MongoDB daily_logs collection.
-GET /analytics/weekly?uid=<firebase_uid>&week=<1-4>
-  week=1 → days  1-7  of current month
-  week=2 → days  8-14
-  week=3 → days 15-21
-  week=4 → days 22-end of month
-  week omitted → rolling last 7 days (today − 6 → today)
-"""
+# Analytics routes: Fetch metrics and trends from historical data.
 from fastapi import APIRouter, Query, HTTPException, Depends
 from motor.motor_asyncio import AsyncIOMotorCollection
 from datetime import date as dt_date, timedelta
@@ -15,8 +7,6 @@ from app.db.mongo import get_daily_logs_collection, get_users_collection
 
 router = APIRouter()
 
-
-# ── helpers ──────────────────────────────────────────────────────────────────
 
 def _week_date_range(week: int | None) -> tuple[str, str, str, str]:
     """Returns (start_iso, end_iso, week_label, date_range_display)."""

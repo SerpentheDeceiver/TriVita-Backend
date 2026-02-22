@@ -1,8 +1,4 @@
-"""
-Daily log routes — POST /log/sleep, /log/hydration, /log/nutrition
-                   GET  /log/today   GET  /log/{date}
-All routes use firebase_uid as a query parameter (no bearer token required).
-"""
+# Daily log routes for sleep, hydration, and nutrition.
 from __future__ import annotations
 
 import math
@@ -26,9 +22,7 @@ from app.services.scoring import recompute_scores
 router = APIRouter(tags=["Daily Logs"])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _today() -> str:
     return dt_date.today().isoformat()   # "YYYY-MM-DD"
@@ -133,9 +127,7 @@ async def _get_user_targets(
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────────────────────────────────────
+# Endpoints
 
 @router.post("/sleep", summary="Log today's sleep")
 async def log_sleep(
@@ -147,9 +139,7 @@ async def log_sleep(
     firebase_uid = uid
     today        = _today()
 
-    # ── Conflict check: only block if a *complete* sleep entry (with hours)
-    # already exists.  Partial entries from wake/bedtime notifications
-    # (only wake_time or bed_time, no hours) are allowed to be replaced.
+    # Check for existing sleep entry
     existing = await logs_col.find_one(
         {"firebase_uid": firebase_uid, "date": today},
         {"sleep": 1},
@@ -197,7 +187,7 @@ async def log_hydration(
 ):
     firebase_uid = uid
     today        = _today()
-    # Prefer the device-local time sent by the client; fall back to server IST.
+    # Get timestamps
     logged_time    = body.logged_time or _now_hhmm()
     estimated_time = body.estimated_time or logged_time
 
@@ -233,7 +223,7 @@ async def log_nutrition(
 ):
     firebase_uid = uid
     today        = _today()
-    # Prefer the device-local time sent by the client; fall back to server IST.
+    # Get timestamps
     logged_time    = body.logged_time or _now_hhmm()
     estimated_time = body.estimated_time or logged_time
 

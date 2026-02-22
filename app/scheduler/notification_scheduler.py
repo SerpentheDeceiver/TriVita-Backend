@@ -33,6 +33,24 @@ DEFAULT_PREFS = {
     "sleep_enabled":       True,
     "hydration_enabled":   True,
     "nutrition_enabled":   True,
+    "dark_mode":           False,
+    # Individual Toggles
+    "wake_enabled":           True,
+    "bedtime_enabled":        True,
+    "breakfast_enabled":       True,
+    "mid_morning_enabled":      True,
+    "lunch_enabled":           True,
+    "afternoon_break_enabled":  True,
+    "dinner_enabled":          True,
+    "post_dinner_enabled":      True,
+    "hydration_1_enabled":      True,
+    "hydration_2_enabled":      True,
+    "hydration_3_enabled":      True,
+    "hydration_4_enabled":      True,
+    "hydration_5_enabled":      True,
+    "hydration_6_enabled":      True,
+    "hydration_7_enabled":      True,
+    "hydration_8_enabled":      True,
     # Sleep
     "wake_time":            "07:00",
     "bedtime_time":         "22:30",
@@ -108,54 +126,58 @@ def _build_schedule(user_doc: dict, date_str: str, skip_past: bool = True) -> li
     # ── Sleep (2) ─────────────────────────────────────────────────────────
     if prefs.get("sleep_enabled", True):
         sleep_map = [
-            ("wake",    "wake_time"),
-            ("bedtime", "bedtime_time"),
+            ("wake",    "wake_time",    "wake_enabled"),
+            ("bedtime", "bedtime_time", "bedtime_enabled"),
         ]
-        for notif_type, key in sleep_map:
-            t = prefs.get(key)
-            if t:
-                utc = _parse_local_time(t, date_str, tz_name)
-                if not skip_past or utc >= now_utc:
-                    slots.append({
-                        "slot_label":        notif_type,
-                        "notification_type": notif_type,
-                        "scheduled_utc":     utc,
-                    })
+        for notif_type, time_key, enabled_key in sleep_map:
+            if prefs.get(enabled_key, True):
+                t = prefs.get(time_key)
+                if t:
+                    utc = _parse_local_time(t, date_str, tz_name)
+                    if not skip_past or utc >= now_utc:
+                        slots.append({
+                            "slot_label":        notif_type,
+                            "notification_type": notif_type,
+                            "scheduled_utc":     utc,
+                        })
 
     # ── Nutrition (6) ─────────────────────────────────────────────────────
     if prefs.get("nutrition_enabled", True):
         nutrition_map = [
-            ("breakfast",       "breakfast_time"),
-            ("mid_morning",     "mid_morning_time"),
-            ("lunch",           "lunch_time"),
-            ("afternoon_break", "afternoon_break_time"),
-            ("dinner",          "dinner_time"),
-            ("post_dinner",     "post_dinner_time"),
+            ("breakfast",       "breakfast_time",       "breakfast_enabled"),
+            ("mid_morning",     "mid_morning_time",     "mid_morning_enabled"),
+            ("lunch",           "lunch_time",           "lunch_enabled"),
+            ("afternoon_break", "afternoon_break_time", "afternoon_break_enabled"),
+            ("dinner",          "dinner_time",          "dinner_enabled"),
+            ("post_dinner",     "post_dinner_time",     "post_dinner_enabled"),
         ]
-        for notif_type, key in nutrition_map:
-            t = prefs.get(key)
-            if t:
-                utc = _parse_local_time(t, date_str, tz_name)
-                if not skip_past or utc >= now_utc:
-                    slots.append({
-                        "slot_label":        notif_type,
-                        "notification_type": notif_type,
-                        "scheduled_utc":     utc,
-                    })
+        for notif_type, time_key, enabled_key in nutrition_map:
+            if prefs.get(enabled_key, True):
+                t = prefs.get(time_key)
+                if t:
+                    utc = _parse_local_time(t, date_str, tz_name)
+                    if not skip_past or utc >= now_utc:
+                        slots.append({
+                            "slot_label":        notif_type,
+                            "notification_type": notif_type,
+                            "scheduled_utc":     utc,
+                        })
 
     # ── Hydration (8) ─────────────────────────────────────────────────────
     if prefs.get("hydration_enabled", True):
         for idx in range(1, 9):
-            key = f"hydration_{idx}_time"
-            t = prefs.get(key)
-            if t:
-                utc = _parse_local_time(t, date_str, tz_name)
-                if not skip_past or utc >= now_utc:
-                    slots.append({
-                        "slot_label":        f"hydration_{idx}",
-                        "notification_type": "hydration",
-                        "scheduled_utc":     utc,
-                    })
+            enabled_key = f"hydration_{idx}_enabled"
+            if prefs.get(enabled_key, True):
+                time_key = f"hydration_{idx}_time"
+                t = prefs.get(time_key)
+                if t:
+                    utc = _parse_local_time(t, date_str, tz_name)
+                    if not skip_past or utc >= now_utc:
+                        slots.append({
+                            "slot_label":        f"hydration_{idx}",
+                            "notification_type": "hydration",
+                            "scheduled_utc":     utc,
+                        })
 
     return slots
 

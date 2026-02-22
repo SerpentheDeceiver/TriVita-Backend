@@ -51,6 +51,25 @@ class NotificationPrefsRequest(BaseModel):
     sleep_enabled:       bool = True
     hydration_enabled:   bool = True
     nutrition_enabled:   bool = True
+    dark_mode:           bool = False
+
+    # Individual Toggles
+    wake_enabled:           bool = True
+    bedtime_enabled:        bool = True
+    breakfast_enabled:       bool = True
+    mid_morning_enabled:      bool = True
+    lunch_enabled:           bool = True
+    afternoon_break_enabled:  bool = True
+    dinner_enabled:          bool = True
+    post_dinner_enabled:      bool = True
+    hydration_1_enabled:      bool = True
+    hydration_2_enabled:      bool = True
+    hydration_3_enabled:      bool = True
+    hydration_4_enabled:      bool = True
+    hydration_5_enabled:      bool = True
+    hydration_6_enabled:      bool = True
+    hydration_7_enabled:      bool = True
+    hydration_8_enabled:      bool = True
 
     # Sleep (2)
     wake_time:            str = "07:00"
@@ -143,6 +162,23 @@ async def get_preferences(uid: str = Query(...)):
         "sleep_enabled":       True,
         "hydration_enabled":   True,
         "nutrition_enabled":   True,
+        "dark_mode":           False,
+        "wake_enabled":           True,
+        "bedtime_enabled":        True,
+        "breakfast_enabled":       True,
+        "mid_morning_enabled":      True,
+        "lunch_enabled":           True,
+        "afternoon_break_enabled":  True,
+        "dinner_enabled":          True,
+        "post_dinner_enabled":      True,
+        "hydration_1_enabled":      True,
+        "hydration_2_enabled":      True,
+        "hydration_3_enabled":      True,
+        "hydration_4_enabled":      True,
+        "hydration_5_enabled":      True,
+        "hydration_6_enabled":      True,
+        "hydration_7_enabled":      True,
+        "hydration_8_enabled":      True,
         "wake_time":            "07:00",
         "bedtime_time":         "22:30",
         "breakfast_time":       "08:00",
